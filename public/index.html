@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Investment Dashboard</title>
+<style>
+:root{
+  --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--border2:#f1f5f9;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --green:#16a34a;--green-l:#d1fae5;
+  --red:#dc2626;--red-l:#fee2e2;
+  --yellow:#d97706;--yellow-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --navy:#0f2144;
+  --r:10px;--rs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:12px;overflow-y:auto;position:sticky;top:0;max-height:100vh;display:flex;flex-direction:column;gap:10px}
+.main{padding:12px;overflow-x:hidden;display:flex;flex-direction:column;gap:10px}
+
+/* SIDEBAR */
+.sb-logo{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.sb-logo .ico{width:30px;height:30px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.sb-logo .txt{font-size:13px;font-weight:700;color:var(--text)}
+.sb-logo .sub{font-size:9px;color:var(--text3)}
+.sb-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+
+/* API STATUS (no input needed) */
+.api-status{display:flex;flex-direction:column;gap:5px}
+.api-row{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:var(--rs);border:1px solid var(--border)}
+.ap{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ap-ok{background:var(--green)}.ap-off{background:#e2e8f0}.ap-auto{background:var(--blue)}
+.api-name{font-size:10px;font-weight:600;color:var(--text2);flex:1}
+.api-src{font-size:9px;color:var(--text3)}
+
+/* CRITERIA */
+.crit-list{display:flex;flex-direction:column;gap:4px}
+.crit-it{background:var(--bg);border-radius:var(--rs);padding:6px 8px;border-left:3px solid var(--blue)}
+.crit-name{font-size:10px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:4px}
+.ctag{display:inline-block;padding:0 4px;border-radius:3px;font-size:8px;font-weight:700}
+.t-hf{background:var(--yellow-l);color:#92400e}
+.t-gmo{background:var(--purple-l);color:#5b21b6}
+.t-etf{background:var(--blue-l);color:#1e40af}
+.crit-desc{font-size:9px;color:var(--text3);margin-top:1px;line-height:1.3}
+.crit-val{font-size:9px;font-weight:600;color:var(--blue);margin-top:1px}
+.grade-mini{background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--rs);padding:7px}
+.grade-mini h4{font-size:9px;font-weight:700;color:#0369a1;margin-bottom:3px}
+.gr{display:flex;gap:4px;align-items:center;font-size:9px;color:var(--text2);padding:1px 0}
+.gb{width:17px;height:12px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0}
+.ga{background:var(--green-l);color:var(--green)}.gb2{background:var(--yellow-l);color:var(--yellow)}.gc{background:var(--red-l);color:var(--red)}
+.tip-box{background:var(--yellow-l);border:1px solid #fde68a;border-radius:var(--rs);padding:7px;font-size:9px;color:#78350f;line-height:1.4}
+
+/* MAIN */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.page-title h1{font-size:16px;font-weight:700;color:var(--navy)}
+.page-title p{font-size:10px;color:var(--text3);margin-top:1px}
+.header-btns{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.htab{padding:5px 9px;border-radius:var(--rs);border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;font-size:11px;font-weight:500}
+.htab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* MACRO */
+.macro-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
+.mc .ml{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:3px}
+.mc .mv{font-size:16px;font-weight:700}
+.mc .ms{font-size:9px;color:var(--text3);margin-top:1px}
+
+/* STATS */
+.stats-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.stat-card .sl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:3px}
+.stat-card .sv{font-size:18px;font-weight:700}
+.stat-card .ss{font-size:9px;color:var(--text3);margin-top:1px}
+
+/* FILTERS */
+.filters-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:2px}
+.fg label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.03em}
+select,input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--rs);padding:5px 7px;font-size:11px}
+select:focus,input:focus{outline:none;border-color:var(--blue)}
+.market-grid{display:flex;gap:3px;flex-wrap:wrap}
+.mkt-btn{padding:4px 7px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;font-size:10px;font-weight:500}
+.mkt-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn{padding:6px 11px;border-radius:var(--rs);border:none;cursor:pointer;font-size:11px;font-weight:600}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:#2563eb}
+.btn-s{background:var(--bg);border:1px solid var(--border);color:var(--text2)}
+.btn-sm{padding:4px 8px;font-size:10px}
+
+/* TABLE */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;flex:1}
+.tbl-scroll{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 400px)}
+table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+th{text-align:left;padding:7px 8px;color:var(--text3);background:var(--bg);border-bottom:1px solid var(--border);font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;position:sticky;top:0;z-index:10}
+th:hover{color:var(--blue)}
+td{padding:7px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+tr.xrow td{background:#f0f9ff}
+.count-bar{padding:6px 10px;background:var(--bg);border-top:1px solid var(--border);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:8px}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:700}
+.b-sb{background:#052e16;color:#4ade80;border:1px solid #16a34a30}
+.b-buy{background:var(--green-l);color:var(--green)}
+.b-neu{background:var(--yellow-l);color:var(--yellow)}
+.b-sell{background:var(--red-l);color:var(--red)}
+.b-ss{background:#2d0606;color:#f87171}
+.b-reg{background:var(--blue-l);color:#1e40af}
+.b-na{background:var(--bg);color:var(--text3);border:1px solid var(--border)}
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}.muted{color:var(--text3)}
+
+/* SCORE */
+.sg{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:10px;font-weight:800;border:2px solid;flex-shrink:0}
+.sg-h{background:var(--green-l);color:var(--green);border-color:var(--green)}
+.sg-m{background:var(--yellow-l);color:var(--yellow);border-color:var(--yellow)}
+.sg-l{background:var(--red-l);color:var(--red);border-color:var(--red)}
+
+/* TECHNICAL CHIPS — from TradingView data (instant) */
+.tech-row{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.tc{display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:600}
+.tc-bull{background:var(--green-l);color:var(--green)}
+.tc-bear{background:var(--red-l);color:var(--red)}
+.tc-neu{background:var(--bg);color:var(--text3);border:1px solid var(--border)}
+
+/* DETAIL */
+.dw{background:#f0f9ff;border-top:2px solid #bae6fd;padding:12px}
+.dh{display:flex;justify-content:space-between;margin-bottom:10px}
+.dh-ticker{font-size:20px;font-weight:800;color:var(--navy)}
+.dh-name{font-size:11px;color:var(--text2);margin-top:2px}
+.dh-pv{font-size:18px;font-weight:700;text-align:right}
+.dh-chg{font-size:11px;margin-top:1px;text-align:right}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.dk{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px}
+.dk h3{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+.hf-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.hf-lbl{font-size:10px;color:var(--text2);min-width:105px}
+.hf-bg{flex:1;height:4px;background:var(--border);border-radius:2px}
+.hf-fill{height:4px;border-radius:2px}
+.hf-v{font-size:10px;font-weight:700;min-width:22px;text-align:right}
+.fun-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border2);font-size:10px}
+.fun-row:last-child{border:none}
+.tgt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:7px}
+.tg{background:var(--bg);border-radius:5px;padding:6px;text-align:center;border:1px solid var(--border)}
+.tg .tl{font-size:9px;color:var(--text3);margin-bottom:2px}
+.tg .tv{font-size:13px;font-weight:700}
+.d-actions{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+
+/* CHART */
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px}
+.chart-header{padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);display:flex;align-items:center;justify-content:space-between}
+
+/* FINVIZ */
+.fv-strip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.fv-btn{padding:5px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-size:10px;font-weight:500}
+.fv-btn:hover{background:var(--bg);border-color:var(--blue);color:var(--blue)}
+
+/* PROGRESS */
+.progress-wrap{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text2)}
+.progress-bar{width:120px;height:4px;background:var(--border);border-radius:2px}
+.progress-fill{height:4px;border-radius:2px;background:var(--blue);transition:width .3s}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row{display:flex;align-items:center;gap:8px;padding:24px;color:var(--text3);font-size:12px;justify-content:center}
+.vol-hi{background:var(--yellow-l);color:var(--yellow);padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700}
+.vol-ok{color:var(--text3);font-size:10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ SIDEBAR ════════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="ico">∑AI</div>
+    <div>
+      <div class="txt">Global Investment</div>
+      <div class="sub">All Markets · All Opportunities</div>
+    </div>
+  </div>
+
+  <!-- API STATUS — keys desde Vercel env vars, no se piden aquí -->
+  <div class="sb-label">Estado APIs</div>
+  <div class="api-status">
+    <div class="api-row"><div class="ap ap-auto"></div><span class="api-name">FRED — Macro</span><span class="api-src">Automático</span></div>
+    <div class="api-row"><div class="ap" id="av-status-dot" style="background:#e2e8f0"></div><span class="api-name">Alpha Vantage</span><span class="api-src" id="av-status-txt">Verificando…</span></div>
+    <div class="api-row"><div class="ap" id="fmp-status-dot" style="background:#e2e8f0"></div><span class="api-name">FMP — Analistas</span><span class="api-src" id="fmp-status-txt">Verificando…</span></div>
+    <div style="font-size:9px;color:var(--text3);padding:4px 0;line-height:1.4">Las keys se leen desde las variables de entorno de Vercel. Sin configuración necesaria aquí.</div>
+  </div>
+
+  <!-- CRITERIOS -->
+  <div class="sb-label">8 Capas de selección</div>
+  <div class="crit-list">
+    <div class="crit-it" style="border-color:#3b82f6">
+      <div class="crit-name">1. Ciclo macro <span class="ctag t-hf">HF</span></div>
+      <div class="crit-desc">PMI &gt;50 · curva normal · breadth &gt;60%</div>
+      <div class="crit-val">✓ Ferrer: expansión confirmada</div>
+    </div>
+    <div class="crit-it" style="border-color:#f59e0b">
+      <div class="crit-name">2. Momentum <span class="ctag t-hf">HF</span></div>
+      <div class="crit-desc">Precio &gt;SMA200 · RSI 50–70 · RS+ vs benchmark</div>
+      <div class="crit-val">✓ Desde TradingView — al instante</div>
+    </div>
+    <div class="crit-it" style="border-color:#8b5cf6">
+      <div class="crit-name">3. Valoración <span class="ctag t-gmo">GMO</span></div>
+      <div class="crit-desc">CAPE &lt;media 10Y · Mean reversion Grantham</div>
+      <div class="crit-val">✓ P/E &lt;15x · P/B &lt;2x</div>
+    </div>
+    <div class="crit-it" style="border-color:#10b981">
+      <div class="crit-name">4. Calidad <span class="ctag t-gmo">GMO</span></div>
+      <div class="crit-desc">ROE &gt;15% · FCF positivo · Deuda baja</div>
+      <div class="crit-val">✓ ROE &gt;15% · D/E &lt;1</div>
+    </div>
+    <div class="crit-it" style="border-color:#ef4444">
+      <div class="crit-name">5. Pricing power <span class="ctag t-gmo">GMO</span></div>
+      <div class="crit-desc">Márgenes estables en ciclos adversos</div>
+      <div class="crit-val">✓ Gross margin &gt;40%</div>
+    </div>
+    <div class="crit-it" style="border-color:#06b6d4">
+      <div class="crit-name">6. Eficiencia ETF <span class="ctag t-etf">ETF.com</span></div>
+      <div class="crit-desc">TER &lt;0.20% · Spread &lt;0.05%</div>
+      <div class="crit-val">✓ Score ETF.com &gt;90</div>
+    </div>
+    <div class="crit-it" style="border-color:#f97316">
+      <div class="crit-name">7. Smart Money</div>
+      <div class="crit-desc">Insider buying · Institucionales acumulando</div>
+      <div class="crit-val">✓ Desde FMP (env var)</div>
+    </div>
+    <div class="crit-it" style="border-color:#64748b">
+      <div class="crit-name">8. Fit horizonte</div>
+      <div class="crit-desc">Largo / Medio / Corto según ciclo</div>
+      <div class="crit-val">✓ Calculado automáticamente</div>
+    </div>
+  </div>
+
+  <div class="grade-mini">
+    <h4>Rating ETF.com</h4>
+    <div class="gr"><div class="gb ga">A</div>95–100: Perfecto. TER mín</div>
+    <div class="gr"><div class="gb ga">A</div>90–94: Excelente. TD &lt;0.1%</div>
+    <div class="gr"><div class="gb gb2">B</div>75–89: Bueno. Aceptable</div>
+    <div class="gr"><div class="gb gc">C</div>&lt;75: Regular — evaluar</div>
+  </div>
+
+  <div class="tip-box"><strong>⚡ Regla:</strong> Macro confirma → técnico (TV, al instante) filtra → calidad selecciona → ballenas (FMP) validan.</div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div class="page-title">
+      <h1>Global Investment Dashboard</h1>
+      <p id="last-update">Presiona "Cargar oportunidades globales"</p>
+    </div>
+    <div class="header-btns">
+      <div style="display:flex;gap:3px">
+        <button class="htab active" onclick="setHorizon('all',this)">Todo</button>
+        <button class="htab" onclick="setHorizon('long',this)">Largo &gt;5Y</button>
+        <button class="htab" onclick="setHorizon('mid',this)">Medio 1–5Y</button>
+        <button class="htab" onclick="setHorizon('short',this)">Corto &lt;1Y</button>
+      </div>
+      <button class="btn btn-s btn-sm" onclick="loadMacro()">↻ Macro</button>
+    </div>
+  </div>
+
+  <!-- MACRO -->
+  <div class="macro-strip">
+    <div class="mc"><div class="ml">Fed Funds</div><div class="mv muted" id="m-fed">—</div><div class="ms">Política monetaria</div></div>
+    <div class="mc"><div class="ml">T10Y Yield</div><div class="mv muted" id="m-t10">—</div><div class="ms">Bono 10 años</div></div>
+    <div class="mc"><div class="ml">T10–T2 Spread</div><div class="mv muted" id="m-sp">—</div><div class="ms" id="m-sp-sub">Curva yields</div></div>
+    <div class="mc" style="grid-column:span 2"><div class="ml">Señal ciclo — Ferrer + Grantham</div><div class="mv muted" id="m-sig" style="font-size:13px">—</div><div class="ms" id="m-sig-sub">Cargando FRED…</div></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-strip" id="stats-strip" style="display:none">
+    <div class="stat-card"><div class="sl">Total</div><div class="sv blue" id="st-total">—</div><div class="ss">instrumentos</div></div>
+    <div class="stat-card"><div class="sl">Sobre SMA200</div><div class="sv green" id="st-sma">—</div><div class="ss">tendencia alcista</div></div>
+    <div class="stat-card"><div class="sl">Strong Buy</div><div class="sv green" id="st-sb">—</div><div class="ss">recomendación TV</div></div>
+    <div class="stat-card"><div class="sl">RSI óptimo</div><div class="sv blue" id="st-rsi">—</div><div class="ss">50–70 momentum</div></div>
+    <div class="stat-card"><div class="sl">Near 52W High</div><div class="sv yellow" id="st-high">—</div><div class="ss">liderazgo</div></div>
+    <div class="stat-card"><div class="sl">Score prom.</div><div class="sv" id="st-score">—</div><div class="ss">8 capas (0–100)</div></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters-wrap">
+    <div class="fg">
+      <label>Mercados</label>
+      <div class="market-grid">
+        <button class="mkt-btn active" onclick="setMarket('all',this)">🌍 Global</button>
+        <button class="mkt-btn" onclick="setMarket('america',this)">🇺🇸 USA</button>
+        <button class="mkt-btn" onclick="setMarket('europe',this)">🇪🇺 Europa</button>
+        <button class="mkt-btn" onclick="setMarket('uk',this)">🇬🇧 UK</button>
+        <button class="mkt-btn" onclick="setMarket('germany',this)">🇩🇪 DE</button>
+        <button class="mkt-btn" onclick="setMarket('japan',this)">🇯🇵 JP</button>
+        <button class="mkt-btn" onclick="setMarket('hongkong',this)">🇭🇰 HK</button>
+        <button class="mkt-btn" onclick="setMarket('india',this)">🇮🇳 IN</button>
+        <button class="mkt-btn" onclick="setMarket('brazil',this)">🇧🇷 BR</button>
+        <button class="mkt-btn" onclick="setMarket('canada',this)">🇨🇦 CA</button>
+      </div>
+    </div>
+    <div class="fg"><label>Tipo</label>
+      <select id="f-type">
+        <option value="">Todos</option><option value="stock">Acciones</option>
+        <option value="etf">ETFs</option><option value="reit">REITs</option>
+      </select>
+    </div>
+    <div class="fg"><label>Buscar</label><input type="text" id="f-q" placeholder="AAPL, NVDA…" style="width:110px" oninput="renderTable()"></div>
+    <div class="fg"><label>Sector</label>
+      <select id="f-sector" onchange="renderTable()" style="width:130px">
+        <option value="">Todos</option>
+        <option>Technology</option><option>Healthcare</option><option>Financial Services</option>
+        <option>Consumer Cyclical</option><option>Industrials</option><option>Energy</option>
+        <option>Communication Services</option><option>Consumer Defensive</option>
+        <option>Basic Materials</option><option>Real Estate</option><option>Utilities</option>
+      </select>
+    </div>
+    <div class="fg"><label>Técnico</label>
+      <select id="f-tech" onchange="renderTable()">
+        <option value="">Todos</option>
+        <option value="sma200">Sobre SMA200 ✓</option>
+        <option value="both-sma">SMA200 + SMA50 ✓</option>
+        <option value="rsi">RSI 50–70</option>
+        <option value="macd">MACD alcista</option>
+        <option value="strongbuy">TV Strong Buy</option>
+        <option value="near52h">Near 52W High</option>
+        <option value="volspike">Vol spike &gt;2x</option>
+        <option value="perfect">Todo verde ✓✓✓</option>
+      </select>
+    </div>
+    <div class="fg"><label>Fundamental</label>
+      <select id="f-fund" onchange="renderTable()">
+        <option value="">Todos</option>
+        <option value="value">Value: P/E &lt;15</option>
+        <option value="quality">Quality: ROE &gt;15%</option>
+        <option value="growth">Growth: Margen &gt;40%</option>
+        <option value="divid">Dividendo &gt;2%</option>
+        <option value="cheap">P/B &lt;1.5 muy barato</option>
+        <option value="gmo">GMO combo (val+cal)</option>
+      </select>
+    </div>
+    <div class="fg"><label>Score mín</label><input type="number" id="f-score" value="0" min="0" max="100" style="width:58px" oninput="renderTable()"></div>
+    <div class="fg"><label>P/E máx</label><input type="number" id="f-pe" value="999" style="width:58px" oninput="renderTable()"></div>
+    <div style="display:flex;gap:5px;align-items:flex-end">
+      <button class="btn btn-s btn-sm" onclick="resetFilters()">Reset</button>
+      <button class="btn btn-p" id="load-btn" onclick="loadScreener()">🌍 Cargar oportunidades globales</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="tbl-wrap">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th style="width:18px"></th>
+          <th onclick="sortBy('ticker')">Ticker ⇅</th>
+          <th>Nombre</th>
+          <th onclick="sortBy('country')">País ⇅</th>
+          <th onclick="sortBy('sector')">Sector ⇅</th>
+          <th onclick="sortBy('price')">Precio ⇅</th>
+          <th onclick="sortBy('change')">Hoy% ⇅</th>
+          <th onclick="sortBy('relVolume')">Vol rel ⇅</th>
+          <th>Técnico TV <span style="color:var(--green);font-size:8px">⚡ al instante</span></th>
+          <th onclick="sortBy('preScore')">Score ⇅</th>
+          <th>Semáforo</th>
+          <th>Horizonte</th>
+          <th onclick="sortBy('pe')">P/E ⇅</th>
+          <th onclick="sortBy('roe')">ROE ⇅</th>
+          <th onclick="sortBy('grossMargin')">Margen ⇅</th>
+          <th onclick="sortBy('marketCap')">Mkt Cap ⇅</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody">
+          <tr><td colspan="17" class="loading-row">Presiona "Cargar oportunidades globales" — los indicadores técnicos se muestran al instante desde TradingView</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="count-bar">
+      <span id="count-lbl">—</span>
+      <div id="prog-wrap" style="display:none" class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+        <span id="prog-txt"></span>
+      </div>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3)">▸ Click = detalle · Doble click = gráfico TradingView</span>
+    </div>
+  </div>
+
+  <!-- FINVIZ -->
+  <div class="fv-strip">
+    <span style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Finviz:</span>
+    <button class="fv-btn" onclick="oFV('momentum')">⚡ Momentum Ferrer</button>
+    <button class="fv-btn" onclick="oFV('growth')">📈 Growth + ROE</button>
+    <button class="fv-btn" onclick="oFV('highs')">🏔 Near 52W High</button>
+    <button class="fv-btn" onclick="oFV('value')">💎 Value Grantham</button>
+    <button class="fv-btn" onclick="oFV('quality')">⭐ Quality GMO</button>
+    <button class="fv-btn" onclick="oFV('dividend')">💰 Dividendos</button>
+    <span style="font-size:9px;color:var(--text3)">Filtros preconfigurados Ferrer + Grantham</span>
+  </div>
+
+  <!-- CHART -->
+  <div id="chart-panel" style="display:none"></div>
+</main>
+</div>
+
+<script>
+const BASE = window.location.origin;
+let allStocks = [], openTicker = null, sortKey = 'preScore', sortAsc = false;
+let currentHorizon = 'all', currentMarket = 'all', globalMacroScore = 55;
+const LIVE = {};
+
+// ── CHECK API STATUS FROM ENV VARS ────────────────────────────────────────────
+async function checkApiStatus() {
+  try {
+    const r = await fetch(`${BASE}/api/technical?ticker=AAPL`);
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('av-status-dot').style.background = '#16a34a';
+      document.getElementById('av-status-txt').textContent = '✓ Activa';
+      document.getElementById('av-status-txt').style.color = '#16a34a';
+    } else if (d.noKey) {
+      document.getElementById('av-status-dot').style.background = '#f59e0b';
+      document.getElementById('av-status-txt').textContent = 'Sin key';
+    } else {
+      document.getElementById('av-status-dot').style.background = '#dc2626';
+      document.getElementById('av-status-txt').textContent = 'Límite API';
+    }
+  } catch(e) {
+    document.getElementById('av-status-txt').textContent = 'Error';
+  }
+
+  try {
+    const r = await fetch(`${BASE}/api/targets?ticker=AAPL`);
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('fmp-status-dot').style.background = '#16a34a';
+      document.getElementById('fmp-status-txt').textContent = '✓ Activa';
+      document.getElementById('fmp-status-txt').style.color = '#16a34a';
+    } else if (d.noKey) {
+      document.getElementById('fmp-status-dot').style.background = '#f59e0b';
+      document.getElementById('fmp-status-txt').textContent = 'Sin key';
+    } else {
+      document.getElementById('fmp-status-dot').style.background = '#dc2626';
+      document.getElementById('fmp-status-txt').textContent = 'Error';
+    }
+  } catch(e) {
+    document.getElementById('fmp-status-txt').textContent = 'Error';
+  }
+}
+
+// ── MACRO ─────────────────────────────────────────────────────────────────────
+async function loadMacro() {
+  try {
+    const r = await fetch(`${BASE}/api/macro`);
+    const d = await r.json();
+    if (d.success) {
+      const m = d.data;
+      document.getElementById('m-fed').innerHTML = `<span style="color:var(--blue)">${m.fedFunds?.toFixed(2)}%</span>`;
+      document.getElementById('m-t10').innerHTML  = `<span style="color:var(--blue)">${m.t10y?.toFixed(2)}%</span>`;
+      const sc = m.spread > 0 ? 'var(--green)' : m.spread > -0.5 ? 'var(--yellow)' : 'var(--red)';
+      document.getElementById('m-sp').innerHTML = `<span style="color:${sc}">${m.spread >= 0 ? '+' : ''}${m.spread?.toFixed(2)}%</span>`;
+      document.getElementById('m-sp-sub').textContent = m.spread > 0 ? 'Curva normal ✓' : m.spread > -0.5 ? 'Plana ⚠' : 'Invertida ✗';
+      document.getElementById('m-sig').innerHTML    = `<span style="color:${m.macro.color}">${m.macro.label}</span>`;
+      document.getElementById('m-sig-sub').textContent = m.macro.desc;
+      globalMacroScore = m.macro.score;
+    }
+  } catch(e) { document.getElementById('m-sig').textContent = 'FRED no disponible'; }
+}
+
+// ── SCREENER ──────────────────────────────────────────────────────────────────
+async function loadScreener() {
+  const btn = document.getElementById('load-btn');
+  btn.innerHTML = '<span class="spin"></span> Cargando…';
+  btn.disabled = true;
+  showProgress(10, 'Conectando con TradingView…');
+  document.getElementById('tbody').innerHTML = `<tr><td colspan="17" class="loading-row"><div class="spin"></div>Escaneando mercados globales… 10–20 segundos</td></tr>`;
+
+  const type = document.getElementById('f-type').value;
+  const url  = `${BASE}/api/screener?market=${currentMarket}&limit=500&type=${type||'all'}&minCap=200&minVol=50000`;
+
+  try {
+    showProgress(40, 'Procesando datos…');
+    const r = await fetch(url);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'Error desconocido');
+
+    showProgress(80, 'Calculando 8 capas…');
+    allStocks = d.data.map(s => enrichStock(s));
+    showProgress(100, `${allStocks.length} oportunidades`);
+
+    updateStats(d.stats);
+    const mkts = Object.entries(d.stats.byMarket || {}).map(([m, n]) => `${m}:${n}`).join(' ');
+    document.getElementById('last-update').textContent =
+      `${new Date().toLocaleTimeString('es-CL')} · ${allStocks.length} instrumentos · ${mkts}`;
+
+    btn.innerHTML = '↻ Recargar';
+    btn.disabled  = false;
+    setTimeout(() => document.getElementById('prog-wrap').style.display = 'none', 3000);
+    renderTable();
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="17" style="padding:20px;color:var(--red);text-align:center">
+      ❌ ${e.message}<br><small style="color:var(--text3)">Verifica que el deploy en Vercel está activo y que las funciones API funcionan</small></td></tr>`;
+    btn.innerHTML = '🌍 Cargar oportunidades globales';
+    btn.disabled  = false;
+    document.getElementById('prog-wrap').style.display = 'none';
+  }
+}
+
+function showProgress(pct, txt) {
+  document.getElementById('prog-wrap').style.display  = 'flex';
+  document.getElementById('prog-fill').style.width    = pct + '%';
+  document.getElementById('prog-txt').textContent     = txt;
+}
+
+function updateStats(s) {
+  if (!s) return;
+  document.getElementById('stats-strip').style.display = 'grid';
+  document.getElementById('st-total').textContent = (s.total || 0).toLocaleString('es-CL');
+  document.getElementById('st-sma').textContent   = (s.aboveSMA200 || 0).toLocaleString('es-CL');
+  document.getElementById('st-sb').textContent    = (s.strongBuy || 0).toLocaleString('es-CL');
+  document.getElementById('st-rsi').textContent   = (s.rsiOk || 0).toLocaleString('es-CL');
+  document.getElementById('st-high').textContent  = (s.nearHigh52 || 0).toLocaleString('es-CL');
+  const el = document.getElementById('st-score');
+  el.textContent = s.avgScore || '—';
+  el.className   = 'sv ' + (s.avgScore >= 70 ? 'green' : s.avgScore >= 50 ? 'yellow' : 'red');
+}
+
+// ── ENRICH ────────────────────────────────────────────────────────────────────
+function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
+
+function enrichStock(s) {
+  const layers = {
+    macro:      globalMacroScore,
+    momentum:   getMomScore(s),
+    valuation:  getValScore(s),
+    quality:    getQualScore(s),
+    pricing:    getPriceScore(s),
+    efficiency: getEffScore(s),
+    whales:     50,
+    fit:        getFitScore(s),
+  };
+  const preScore = clamp(Math.round(Object.values(layers).reduce((a, b) => a + b, 0) / 8));
+  const horizon  = calcHorizon(s, layers, preScore);
+  return { ...s, layers, preScore, horizon };
+}
+
+function getMomScore(s) {
+  let sc = 50;
+  if (s.aboveSMA200 === true)  sc += 25; if (s.aboveSMA200 === false) sc -= 25;
+  if (s.aboveSMA50  === true)  sc += 10; if (s.aboveSMA50  === false) sc -= 10;
+  if (s.rsi >= 50 && s.rsi <= 70) sc += 15;
+  if (s.rsi > 75) sc -= 10;  if (s.rsi < 40) sc -= 20;
+  if (s.recAll >= 0.5) sc += 10; if (s.recAll <= -0.3) sc -= 15;
+  if (s.macdBull === true) sc += 8;
+  return clamp(sc);
+}
+function getValScore(s) {
+  let sc = 50;
+  const pe = s.pe;
+  if (pe > 0) { if (pe < 12) sc += 30; else if (pe < 18) sc += 15; else if (pe < 25) sc += 5; else if (pe < 35) sc -= 10; else sc -= 25; }
+  if (s.pb > 0) { if (s.pb < 1.5) sc += 20; else if (s.pb < 2.5) sc += 8; else if (s.pb > 5) sc -= 15; }
+  return clamp(sc);
+}
+function getQualScore(s) {
+  let sc = 50;
+  if (s.roe > 20) sc += 25; else if (s.roe > 15) sc += 15; else if (s.roe > 10) sc += 5; else if (s.roe < 5) sc -= 20;
+  if (s.debtEquity < 0.5) sc += 15; else if (s.debtEquity < 1) sc += 5; else if (s.debtEquity > 2) sc -= 20;
+  return clamp(sc);
+}
+function getPriceScore(s) {
+  let sc = 50;
+  if (s.grossMargin > 60) sc += 30; else if (s.grossMargin > 40) sc += 15; else if (s.grossMargin > 25) sc += 5; else if (s.grossMargin < 15) sc -= 20;
+  return clamp(sc);
+}
+function getEffScore(s) {
+  let sc = 60;
+  if (s.marketCap > 100e9) sc += 20; else if (s.marketCap > 10e9) sc += 10;
+  if (s.relVolume > 2) sc += 10; else if (s.relVolume > 1) sc += 5;
+  return clamp(sc);
+}
+function getFitScore(s) {
+  let sc = 60;
+  if (s.marketCap > 50e9) sc += 15;
+  if (s.avgVolume > 2e6)  sc += 10;
+  if (s.currency === 'USD') sc += 5;
+  return clamp(sc);
+}
+function calcHorizon(s, l, sc) {
+  if (l.quality > 70 && l.valuation > 60 && sc > 65) return 'long';
+  if (l.momentum > 75 && sc > 60) return 'short';
+  if (sc > 50) return 'mid';
+  return 'watch';
+}
+
+// ── FILTER & RENDER ───────────────────────────────────────────────────────────
+function getFiltered() {
+  const q      = document.getElementById('f-q').value.toLowerCase();
+  const sector = document.getElementById('f-sector').value;
+  const minSc  = parseInt(document.getElementById('f-score').value) || 0;
+  const tech   = document.getElementById('f-tech').value;
+  const fund   = document.getElementById('f-fund').value;
+  const maxPe  = parseFloat(document.getElementById('f-pe').value) || 999;
+
+  return allStocks.filter(s => {
+    if (q && !s.ticker?.toLowerCase().includes(q) && !s.description?.toLowerCase().includes(q) && !s.name?.toLowerCase().includes(q)) return false;
+    if (sector && s.sector !== sector) return false;
+    if (s.preScore < minSc) return false;
+    if (s.pe > 0 && s.pe > maxPe) return false;
+    if (currentHorizon !== 'all' && s.horizon !== currentHorizon) return false;
+    // TECHNICAL FILTERS — instant from TradingView data
+    if (tech === 'sma200'    && s.aboveSMA200 !== true) return false;
+    if (tech === 'both-sma'  && !(s.aboveSMA200 === true && s.aboveSMA50 === true)) return false;
+    if (tech === 'rsi'       && !(s.rsi >= 50 && s.rsi <= 70)) return false;
+    if (tech === 'macd'      && s.macdBull !== true) return false;
+    if (tech === 'strongbuy' && s.recAll < 0.5) return false;
+    if (tech === 'near52h'   && !s.nearHigh52) return false;
+    if (tech === 'volspike'  && !(s.relVolume > 2)) return false;
+    if (tech === 'perfect'   && !(s.aboveSMA200 === true && s.rsi >= 50 && s.rsi <= 70 && s.recAll >= 0.1 && s.macdBull === true)) return false;
+    // FUNDAMENTAL FILTERS
+    if (fund === 'value'   && !(s.pe > 0 && s.pe < 15)) return false;
+    if (fund === 'quality' && !(s.roe > 15)) return false;
+    if (fund === 'growth'  && !(s.grossMargin > 40)) return false;
+    if (fund === 'divid'   && !(s.divYield > 2)) return false;
+    if (fund === 'cheap'   && !(s.pb > 0 && s.pb < 1.5)) return false;
+    if (fund === 'gmo'     && !(s.pe > 0 && s.pe < 20 && s.roe > 12 && s.debtEquity < 1.5)) return false;
+    return true;
+  }).sort((a, b) => {
+    const va = a[sortKey], vb = b[sortKey];
+    if (va == null) return 1; if (vb == null) return -1;
+    return typeof va === 'string'
+      ? (sortAsc ? va.localeCompare(vb) : vb.localeCompare(va))
+      : (sortAsc ? va - vb : vb - va);
+  });
+}
+
+function renderTable() {
+  const data = getFiltered();
+  const tbody = document.getElementById('tbody');
+  if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="17" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
+  if (!data.length)      { tbody.innerHTML = `<tr><td colspan="17" class="loading-row">Sin resultados — prueba con otros filtros</td></tr>`; document.getElementById('count-lbl').textContent = '0 resultados'; return; }
+
+  tbody.innerHTML = '';
+  data.forEach(s => {
+    const io   = openTicker === s.ticker;
+    const chgC = s.change >= 0 ? 'var(--green)' : 'var(--red)';
+    const sgC  = s.preScore >= 70 ? 'sg-h' : s.preScore >= 50 ? 'sg-m' : 'sg-l';
+    const hBadge = s.horizon === 'long' ? '<span class="badge" style="background:var(--purple-l);color:var(--purple)">Largo</span>'
+      : s.horizon === 'mid'   ? '<span class="badge b-reg">Medio</span>'
+      : s.horizon === 'short' ? '<span class="badge b-neu">Corto</span>'
+      : '<span class="badge b-na">Watch</span>';
+
+    tbody.innerHTML += `
+    <tr onclick="toggle('${s.ticker}')" ondblclick="openChart('${s.ticker}')" style="cursor:pointer" class="${io ? 'xrow' : ''}">
+      <td style="color:var(--text3);font-size:10px">${io ? '▾' : '▸'}</td>
+      <td><strong style="color:var(--blue)">${s.ticker}</strong></td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font-size:10px">${s.description || s.name || '—'}</td>
+      <td style="font-size:9px;color:var(--text3)">${s.country || s.marketName || '—'}</td>
+      <td style="font-size:10px;color:var(--text3)">${(s.sector || '—').replace(' Services', '').replace(' Cyclical', '').replace(' Defensive', '')}</td>
+      <td><strong>${s.price != null ? s.price.toFixed(2) : '—'}<span style="font-size:9px;color:var(--text3)"> ${s.currency || ''}</span></strong></td>
+      <td><span style="color:${chgC};font-weight:600">${s.change >= 0 ? '+' : ''}${s.change?.toFixed(2) || 0}%</span></td>
+      <td>${s.relVolume > 2 ? `<span class="vol-hi">${s.relVolume.toFixed(1)}x</span>` : `<span class="vol-ok">${s.relVolume ? s.relVolume.toFixed(1) + 'x' : '—'}</span>`}</td>
+      <td>${techChips(s)}</td>
+      <td><span class="sg ${sgC}">${s.preScore}</span></td>
+      <td>${semaphore(s)}</td>
+      <td>${hBadge}</td>
+      <td style="color:${s.pe > 0 && s.pe < 20 ? 'var(--green)' : s.pe > 35 ? 'var(--red)' : 'var(--text3)'}">${s.pe > 0 ? s.pe.toFixed(1) : '—'}</td>
+      <td style="color:${s.roe > 15 ? 'var(--green)' : 'var(--text3)'}">${s.roe ? s.roe.toFixed(1) + '%' : '—'}</td>
+      <td style="color:${s.grossMargin > 40 ? 'var(--green)' : s.grossMargin < 15 ? 'var(--red)' : 'var(--text3)'}">${s.grossMargin ? s.grossMargin.toFixed(1) + '%' : '—'}</td>
+      <td style="font-size:10px;color:var(--text3)">${fmtCap(s.marketCap)}</td>
+      <td style="white-space:nowrap">
+        <button style="padding:2px 6px;background:var(--blue-l);border:1px solid #bfdbfe;color:var(--blue);border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;margin-right:2px" onclick="event.stopPropagation();loadDeep('${s.ticker}')">+ Deep</button>
+        <button style="padding:2px 6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:4px;font-size:9px;cursor:pointer" onclick="event.stopPropagation();openChart('${s.ticker}')">📊</button>
+      </td>
+    </tr>`;
+
+    if (io) {
+      tbody.innerHTML += `<tr><td colspan="17" style="padding:0;background:#f0f9ff;border-bottom:2px solid #bae6fd">
+        <div class="dw">${renderDetail(s)}</div>
+      </td></tr>`;
+    }
+  });
+
+  document.getElementById('count-lbl').textContent = `${data.length.toLocaleString('es-CL')} de ${allStocks.length.toLocaleString('es-CL')} instrumentos${currentHorizon !== 'all' ? ' · ' + currentHorizon : ''}`;
+}
+
+// ── TECHNICAL CHIPS — from TradingView screener data (INSTANT, no API call) ──
+function techChips(s) {
+  const chips = [];
+  // TV Overall Recommendation
+  if (s.recAll != null) {
+    const cls = s.recAll >= 0.5 ? 'tc-bull' : s.recAll >= 0.1 ? 'tc-bull' : s.recAll > -0.1 ? 'tc-neu' : 'tc-bear';
+    const lbl = s.recLabel || '—';
+    chips.push(`<span class="tc ${cls}">${lbl}</span>`);
+  }
+  // SMA200
+  if (s.aboveSMA200 != null) chips.push(`<span class="tc ${s.aboveSMA200 ? 'tc-bull' : 'tc-bear'}">SMA200${s.aboveSMA200 ? '↑' : '↓'}</span>`);
+  // RSI
+  if (s.rsi) {
+    const rsiC = s.rsi >= 50 && s.rsi <= 70 ? 'tc-bull' : s.rsi > 75 ? 'tc-bear' : 'tc-neu';
+    chips.push(`<span class="tc ${rsiC}">RSI${s.rsi.toFixed(0)}</span>`);
+  }
+  // MACD
+  if (s.macdBull != null) chips.push(`<span class="tc ${s.macdBull ? 'tc-bull' : 'tc-bear'}">MACD${s.macdBull ? '▲' : '▼'}</span>`);
+  return `<div class="tech-row">${chips.join('')}</div>`;
+}
+
+function semaphore(s) {
+  const items = [
+    { v: s.layers?.macro, t: 'Mac' },
+    { v: s.layers?.momentum, t: 'Tec' },
+    { v: s.layers?.valuation, t: 'Val' },
+    { v: s.layers?.quality, t: 'Cal' },
+  ];
+  return `<div style="display:flex;gap:3px">
+    ${items.map(i => {
+      const v = i.v || 0;
+      const c = v >= 70 ? 'var(--green)' : v >= 45 ? 'var(--yellow)' : 'var(--red)';
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:1px" title="${i.t}: ${v}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${c}"></div>
+        <span style="font-size:7px;color:var(--text3)">${i.t}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderDetail(s) {
+  const lv = LIVE[s.ticker];
+  const L  = ['Ciclo macro', 'Momentum', 'Valoración', 'Calidad', 'Pricing', 'Eficiencia', 'Smart money', 'Fit'];
+  const LK = ['macro', 'momentum', 'valuation', 'quality', 'pricing', 'efficiency', 'whales', 'fit'];
+
+  return `
+  <div class="dh">
+    <div>
+      <div class="dh-ticker">${s.ticker} <span style="font-size:11px;color:var(--text3)">${s.exchange || ''}</span></div>
+      <div class="dh-name">${s.description || s.name} · ${s.sector || '—'} · ${s.country || s.marketName}</div>
+    </div>
+    <div>
+      <div class="dh-pv">$${s.price?.toFixed(2) || '—'} ${s.currency || ''}</div>
+      <div class="dh-chg" style="color:${s.change >= 0 ? 'var(--green)' : 'var(--red)'}">${s.change >= 0 ? '+' : ''}${s.change?.toFixed(2) || 0}%</div>
+    </div>
+  </div>
+  <div class="detail-grid">
+    <!-- 8 CAPAS -->
+    <div class="dk">
+      <h3>8 Capas — Semáforo completo</h3>
+      ${LK.map((k, i) => {
+        const v = s.layers?.[k] || 0;
+        const c = v >= 70 ? 'var(--green)' : v >= 45 ? 'var(--yellow)' : 'var(--red)';
+        return `<div class="hf-row">
+          <span class="hf-lbl" style="font-size:9px">${v >= 70 ? '🟢' : v >= 45 ? '🟡' : '🔴'} ${L[i]}</span>
+          <div class="hf-bg"><div class="hf-fill" style="width:${v}%;background:${c}"></div></div>
+          <span class="hf-v" style="color:${c}">${v}</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:7px;text-align:center;padding:5px;background:var(--bg);border-radius:5px">
+        Score total: <span class="sg ${s.preScore >= 70 ? 'sg-h' : s.preScore >= 50 ? 'sg-m' : 'sg-l'}" style="margin-left:5px">${s.preScore}</span>
+      </div>
+    </div>
+    <!-- TÉCNICO + FUNDAMENTAL — al instante desde TradingView -->
+    <div class="dk">
+      <h3>Técnico ⚡ TV (al instante) ${lv?.tech ? '+ AV ✓' : ''}</h3>
+      <div class="fun-row"><span>TV Recomendación</span><strong class="${s.recAll >= 0.5 ? 'green' : s.recAll <= -0.3 ? 'red' : 'yellow'}">${s.recLabel || '—'}</strong></div>
+      <div class="fun-row"><span>SMA 200</span><strong style="color:${s.aboveSMA200 ? 'var(--green)' : 'var(--red)'}">${s.aboveSMA200 ? '↑ Sobre' : '↓ Bajo'} ${s.sma200 ? '$' + s.sma200.toFixed(0) : '—'}</strong></div>
+      <div class="fun-row"><span>SMA 50</span><strong style="color:${s.aboveSMA50 ? 'var(--green)' : 'var(--red)'}">${s.aboveSMA50 ? '↑ Sobre' : '↓ Bajo'} ${s.sma50 ? '$' + s.sma50.toFixed(0) : '—'}</strong></div>
+      <div class="fun-row"><span>RSI (14)</span><strong style="color:${s.rsi >= 50 && s.rsi <= 70 ? 'var(--green)' : s.rsi > 70 ? 'var(--red)' : 'var(--yellow)'}">${s.rsi?.toFixed(1) || '—'}</strong></div>
+      <div class="fun-row"><span>MACD</span><strong style="color:${s.macdBull ? 'var(--green)' : 'var(--red)'}">${s.macdBull ? 'Alcista ▲' : 'Bajista ▼'}</strong></div>
+      <div class="fun-row"><span>Vol. relativo</span><strong style="color:${s.relVolume > 2 ? 'var(--yellow)' : 'inherit'}">${s.relVolume?.toFixed(2) || '—'}x</strong></div>
+      <div class="fun-row"><span>Near 52W High</span><strong>${s.distFromHigh || '—'}%</strong></div>
+      ${lv?.tech ? `
+      <div style="margin-top:6px;border-top:1px solid var(--border2);padding-top:5px;font-size:9px;color:var(--text3)">▸ Alpha Vantage (deep)</div>
+      <div class="fun-row"><span>Tech Score AV</span><strong style="color:var(--blue)">${lv.tech.techScore}/100</strong></div>` : ''}
+      <div style="margin-top:7px;border-top:1px solid var(--border2);padding-top:6px">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);margin-bottom:4px">FUNDAMENTOS</div>
+        <div class="fun-row"><span>P/E</span><strong style="color:${s.pe > 0 && s.pe < 20 ? 'var(--green)' : s.pe > 35 ? 'var(--red)' : 'inherit'}">${s.pe?.toFixed(1) || '—'}x</strong></div>
+        <div class="fun-row"><span>P/Book</span><strong>${s.pb?.toFixed(2) || '—'}x</strong></div>
+        <div class="fun-row"><span>ROE</span><strong style="color:${s.roe > 15 ? 'var(--green)' : 'inherit'}">${s.roe?.toFixed(1) || '—'}%</strong></div>
+        <div class="fun-row"><span>Gross Margin</span><strong style="color:${s.grossMargin > 40 ? 'var(--green)' : 'inherit'}">${s.grossMargin?.toFixed(1) || '—'}%</strong></div>
+        <div class="fun-row"><span>Debt/Equity</span><strong style="color:${s.debtEquity < 1 ? 'var(--green)' : s.debtEquity > 2 ? 'var(--red)' : 'inherit'}">${s.debtEquity?.toFixed(2) || '—'}</strong></div>
+        <div class="fun-row"><span>Div Yield</span><strong style="color:var(--blue)">${s.divYield?.toFixed(2) || '—'}%</strong></div>
+      </div>
+    </div>
+    <!-- TARGETS + BALLENAS -->
+    <div class="dk">
+      <h3>Targets + Smart Money${lv?.target ? ' ✓' : ' (clic Deep)'}</h3>
+      ${lv?.target ? `
+      <div class="tgt-grid">
+        <div class="tg"><div class="tl">Bajo</div><div class="tv red">$${parseFloat(lv.target.targetLow || 0).toFixed(0)}</div></div>
+        <div class="tg"><div class="tl">Consenso</div><div class="tv blue">$${parseFloat(lv.target.targetConsensus || 0).toFixed(0)}</div></div>
+        <div class="tg"><div class="tl">Alto</div><div class="tv green">$${parseFloat(lv.target.targetHigh || 0).toFixed(0)}</div></div>
+      </div>
+      <div style="text-align:center;margin-top:6px">
+        <strong style="color:${parseFloat(lv.target.upside || 0) > 0 ? 'var(--green)' : 'var(--red)'}">Upside ${lv.target.upside > 0 ? '+' : ''}${lv.target.upside || '—'}%</strong>
+        &nbsp;<span class="badge ${lv.target.recommendation?.toLowerCase().includes('buy') ? 'b-buy' : 'b-neu'}">${lv.target.recommendation || '—'}</span>
+      </div>
+      ${lv.target.recentGrades?.length ? lv.target.recentGrades.slice(0, 4).map(g => `
+      <div style="display:flex;gap:5px;font-size:9px;padding:3px 0;border-bottom:1px solid var(--border2)">
+        <span style="color:var(--text3)">${g.date?.slice(5, 10)}</span>
+        <span style="flex:1">${g.company}</span>
+        <span style="color:${g.action?.includes('Up') ? 'var(--green)' : 'var(--red)'}">→${g.to}</span>
+      </div>`).join('') : ''}` : `<div style="color:var(--text3);font-size:10px;padding:12px 0;text-align:center">Presiona "+ Deep" para cargar targets de analistas de Wall Street</div>`}
+
+      ${lv?.whales ? `
+      <div style="margin-top:8px;border-top:1px solid var(--border2);padding-top:6px">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);margin-bottom:4px">BALLENAS / INSIDERS</div>
+        <div style="display:flex;gap:5px;margin-bottom:5px">
+          <div style="flex:1;background:var(--bg);border-radius:4px;padding:4px;text-align:center">
+            <div style="font-size:8px;color:var(--text3)">Insiders</div>
+            <div style="font-weight:700;font-size:11px;color:${lv.whales.summary.insiderSentimentColor}">${lv.whales.summary.insiderSentiment}</div>
+          </div>
+          <div style="flex:1;background:var(--bg);border-radius:4px;padding:4px;text-align:center">
+            <div style="font-size:8px;color:var(--text3)">Institucional</div>
+            <div style="font-weight:700;font-size:11px;color:var(--blue)">${lv.whales.summary.totalInstOwnershipPct}%</div>
+          </div>
+        </div>
+        ${lv.whales.insiders?.slice(0, 3).map(i => `
+        <div style="display:flex;gap:4px;font-size:9px;padding:2px 0;border-bottom:1px solid var(--border2)">
+          <span style="font-weight:700;color:${i.isBuy ? 'var(--green)' : 'var(--red)'}">${i.isBuy ? '▲' : '▼'}</span>
+          <span style="flex:1">${i.name?.split(' ').slice(0, 2).join(' ')}</span>
+          <span style="color:var(--text3)">$${fmtNum(i.value)}</span>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>
+  </div>
+  <div class="d-actions">
+    <button class="btn btn-p btn-sm" onclick="loadDeep('${s.ticker}')">↻ Cargar Deep (AV + FMP)</button>
+    <button class="btn btn-s btn-sm" onclick="openChart('${s.ticker}')">📊 Gráfico TV</button>
+    <button class="btn btn-s btn-sm" onclick="window.open('https://finviz.com/quote.ashx?t=${s.ticker}','_blank')">🔍 Finviz</button>
+    <button class="btn btn-s btn-sm" onclick="window.open('https://www.tradingview.com/symbols/${s.fullSymbol || s.ticker}/','_blank')">TV →</button>
+  </div>`;
+}
+
+// ── DEEP DATA (AV + FMP desde env vars) ───────────────────────────────────────
+async function loadDeep(ticker) {
+  LIVE[ticker] = { loading: true };
+  renderTable();
+  const [techRes, tgtRes, whaleRes] = await Promise.all([
+    fetch(`${BASE}/api/technical?ticker=${ticker}`).then(r => r.json()).catch(() => null),
+    fetch(`${BASE}/api/targets?ticker=${ticker}`).then(r => r.json()).catch(() => null),
+    fetch(`${BASE}/api/whales?ticker=${ticker}`).then(r => r.json()).catch(() => null),
+  ]);
+  LIVE[ticker] = {
+    loaded:  true,
+    tech:    techRes?.success  ? techRes.data  : null,
+    target:  tgtRes?.success   ? tgtRes.data   : null,
+    whales:  whaleRes?.success ? whaleRes.data : null,
+  };
+  // Update score with AV tech score
+  if (LIVE[ticker].tech) {
+    const st = allStocks.find(s => s.ticker === ticker);
+    if (st) {
+      st.layers.momentum = LIVE[ticker].tech.techScore || st.layers.momentum;
+      st.preScore = clamp(Math.round(Object.values(st.layers).reduce((a, b) => a + b, 0) / 8));
+    }
+  }
+  renderTable();
+}
+
+// ── CHART ──────────────────────────────────────────────────────────────────────
+function openChart(ticker) {
+  const s   = allStocks.find(x => x.ticker === ticker);
+  const sym = s?.fullSymbol || ticker;
+  const panel = document.getElementById('chart-panel');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+  <div class="chart-wrap">
+    <div class="chart-header">
+      <span>📊 ${ticker} — TradingView (SMA200 · SMA50 · RSI · MACD)</span>
+      <button class="btn btn-s btn-sm" onclick="this.closest('.chart-wrap').parentElement.style.display='none'">✕</button>
+    </div>
+    <div id="tv_${Date.now()}" style="height:500px"></div>
+  </div>`;
+  const cid = panel.querySelector('[id^=tv_]').id;
+  const s2 = document.createElement('script');
+  s2.src = 'https://s3.tradingview.com/tv.js';
+  s2.onload = () => new TradingView.widget({
+    width: '100%', height: 500, symbol: sym, interval: 'D',
+    timezone: 'America/Santiago', theme: 'light', style: '1', locale: 'es',
+    toolbar_bg: '#f8fafc', enable_publishing: false, allow_symbol_change: true,
+    studies: ['MASimple@tv-studilib;length=200', 'MASimple@tv-studilib;length=50', 'RSI@tv-studilib', 'MACD@tv-studilib'],
+    container_id: cid,
+  });
+  document.head.appendChild(s2);
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+function fmtCap(v) {
+  if (!v) return '—';
+  if (v >= 1e12) return `$${(v/1e12).toFixed(1)}T`;
+  if (v >= 1e9)  return `$${(v/1e9).toFixed(1)}B`;
+  if (v >= 1e6)  return `$${(v/1e6).toFixed(0)}M`;
+  return `$${v}`;
+}
+function fmtNum(v) {
+  if (!v) return '—';
+  if (v >= 1e9) return `${(v/1e9).toFixed(1)}B`;
+  if (v >= 1e6) return `${(v/1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `${(v/1e3).toFixed(0)}K`;
+  return `${v}`;
+}
+function toggle(t) { openTicker = openTicker === t ? null : t; renderTable(); }
+function sortBy(k) { if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = false; } renderTable(); }
+function setHorizon(h, el) { currentHorizon = h; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderTable(); }
+function setMarket(m, el)  { currentMarket = m; document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+function resetFilters() {
+  ['f-type','f-sector','f-tech','f-fund'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-q').value = ''; document.getElementById('f-score').value = '0'; document.getElementById('f-pe').value = '999';
+  currentHorizon = 'all'; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); document.querySelector('.htab').classList.add('active');
+  renderTable();
+}
+
+const FV = {
+  momentum: 'https://finviz.com/screener.ashx?v=111&f=cap_midover,fa_pe_u25,fa_epsqoq_pos,ta_sma200_pa,ta_sma50_pa,ta_rsi_nob70,sh_avgvol_o500',
+  growth:   'https://finviz.com/screener.ashx?v=111&f=cap_midover,fa_pe_u30,fa_epsgrowth5_pos,fa_roe_o10,ta_sma200_pa,ta_perf_52w_o10',
+  highs:    'https://finviz.com/screener.ashx?v=111&f=cap_midover,ta_highlow52w_nh,ta_sma200_pa,sh_avgvol_o500,fa_pe_u30',
+  value:    'https://finviz.com/screener.ashx?v=111&f=cap_midover,fa_pe_u15,fa_pb_u2,fa_roe_o10,ta_sma200_pa,sh_avgvol_o500',
+  quality:  'https://finviz.com/screener.ashx?v=111&f=cap_midover,fa_roe_o15,fa_grossmargin_o40,fa_debtequity_u1,ta_sma200_pa,sh_avgvol_o500',
+  dividend: 'https://finviz.com/screener.ashx?v=111&f=cap_midover,fa_div_pos,fa_payoutratio_u60,ta_sma200_pa,sh_avgvol_o500',
+};
+function oFV(k) { window.open(FV[k], '_blank'); }
+
+// INIT
+loadMacro();
+checkApiStatus();
+</script>
+</body>
+</html>
