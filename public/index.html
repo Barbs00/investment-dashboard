@@ -151,9 +151,17 @@ tr.xrow td{background:#f0f9ff}
 .tg .tv{font-size:13px;font-weight:700}
 .d-actions{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
 
-/* CHART */
-.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px}
-.chart-header{padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);display:flex;align-items:center;justify-content:space-between}
+/* DATAROMA */
+.whale-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.whale-head{padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:8px;cursor:pointer}
+.whale-head .sub{font-weight:400;font-size:9px;color:var(--text3)}
+.whale-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px}
+.whale-col h4{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
+.whale-list{display:flex;flex-wrap:wrap;gap:4px}
+.whale-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;border:1px solid var(--border);background:var(--bg);font-size:10px;cursor:pointer}
+.whale-chip:hover{border-color:var(--blue);color:var(--blue)}
+.whale-chip .n{color:var(--text3);font-size:9px}
+.b-whale{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 
 /* FINVIZ */
 .fv-strip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -190,6 +198,7 @@ tr.xrow td{background:#f0f9ff}
     <div class="api-row"><div class="ap ap-auto"></div><span class="api-name">FRED — Macro</span><span class="api-src">Automático</span></div>
     <div class="api-row"><div class="ap" id="av-status-dot" style="background:#e2e8f0"></div><span class="api-name">Alpha Vantage</span><span class="api-src" id="av-status-txt">Verificando…</span></div>
     <div class="api-row"><div class="ap" id="fmp-status-dot" style="background:#e2e8f0"></div><span class="api-name">FMP — Analistas</span><span class="api-src" id="fmp-status-txt">Verificando…</span></div>
+    <div class="api-row"><div class="ap" id="dr-status-dot" style="background:#e2e8f0"></div><span class="api-name">Dataroma — Superinv.</span><span class="api-src" id="dr-status-txt">Verificando…</span></div>
     <div style="font-size:9px;color:var(--text3);padding:4px 0;line-height:1.4">Las keys se leen desde las variables de entorno de Vercel. Sin configuración necesaria aquí.</div>
   </div>
 
@@ -228,12 +237,12 @@ tr.xrow td{background:#f0f9ff}
     </div>
     <div class="crit-it" style="border-color:#f97316">
       <div class="crit-name">7. Smart Money</div>
-      <div class="crit-desc">Insider buying · Institucionales acumulando</div>
-      <div class="crit-val">✓ Desde FMP (env var)</div>
+      <div class="crit-desc">Superinversores (Dataroma 🐋) · Insiders · Institucionales</div>
+      <div class="crit-val">✓ Dataroma auto + FMP (env var)</div>
     </div>
     <div class="crit-it" style="border-color:#64748b">
-      <div class="crit-name">8. Fit horizonte</div>
-      <div class="crit-desc">Largo / Medio / Corto según ciclo</div>
+      <div class="crit-name">8. Fit estrategia</div>
+      <div class="crit-desc">🏛 Largo Plazo / ⚡ Swing según las capas</div>
       <div class="crit-val">✓ Calculado automáticamente</div>
     </div>
   </div>
@@ -246,7 +255,19 @@ tr.xrow td{background:#f0f9ff}
     <div class="gr"><div class="gb gc">C</div>&lt;75: Regular — evaluar</div>
   </div>
 
-  <div class="tip-box"><strong>⚡ Regla:</strong> Macro confirma → técnico (TV, al instante) filtra → calidad selecciona → ballenas (FMP) validan.</div>
+  <div class="sb-label">2 Estrategias</div>
+  <div class="crit-list">
+    <div class="crit-it" style="border-color:#7c3aed">
+      <div class="crit-name">🏛 Largo Plazo (value)</div>
+      <div class="crit-desc">Calidad (ROE &gt;15%, deuda baja, márgenes) a precio razonable (P/E, P/B bajos — mean reversion GMO). Validada por superinversores 🐋. Horizonte: años.</div>
+    </div>
+    <div class="crit-it" style="border-color:#d97706">
+      <div class="crit-name">⚡ Swing Trading</div>
+      <div class="crit-desc"><strong>Momentum:</strong> sobre SMA200+SMA50, RSI 50–70, MACD↑.<br><strong>🎯 Rebote:</strong> bajo SMA200, RSI &lt;40, apoyada en el piso de 52 semanas (soporte mayor). Stop bajo el soporte. Horizonte: días–semanas.</div>
+    </div>
+  </div>
+
+  <div class="tip-box"><strong>⚡ Regla:</strong> Macro confirma → técnico (TV, al instante) filtra → calidad selecciona → ballenas (Dataroma/FMP) validan.</div>
 </aside>
 
 <!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
@@ -259,10 +280,10 @@ tr.xrow td{background:#f0f9ff}
     </div>
     <div class="header-btns">
       <div style="display:flex;gap:3px">
-        <button class="htab active" onclick="setHorizon('all',this)">Todo</button>
-        <button class="htab" onclick="setHorizon('long',this)">Largo &gt;5Y</button>
-        <button class="htab" onclick="setHorizon('mid',this)">Medio 1–5Y</button>
-        <button class="htab" onclick="setHorizon('short',this)">Corto &lt;1Y</button>
+        <button class="htab active" onclick="setStrategy('all',this)">Todo</button>
+        <button class="htab" onclick="setStrategy('long',this)" title="Calidad + valoración razonable (GMO/value). Comprar y mantener años.">🏛 Largo Plazo</button>
+        <button class="htab" onclick="setStrategy('swing',this)" title="Momentum Ferrer (sobre SMA200, RSI 50-70, MACD↑) o rebote en soporte mayor bajo SMA200.">⚡ Swing</button>
+        <button class="htab" onclick="setStrategy('watch',this)">Watch</button>
       </div>
       <button class="btn btn-s btn-sm" onclick="loadMacro()">↻ Macro</button>
     </div>
@@ -276,13 +297,26 @@ tr.xrow td{background:#f0f9ff}
     <div class="mc" style="grid-column:span 2"><div class="ml">Señal ciclo — Ferrer + Grantham</div><div class="mv muted" id="m-sig" style="font-size:13px">—</div><div class="ms" id="m-sig-sub">Cargando FRED…</div></div>
   </div>
 
+  <!-- DATAROMA / SUPERINVERSORES -->
+  <div class="whale-panel" id="whale-panel">
+    <div class="whale-head" onclick="toggleWhalePanel()">
+      <span>🐋 Superinversores — Dataroma</span>
+      <span class="sub" id="whale-sub">Cargando qué compran Buffett, Ackman &amp; cía…</span>
+      <span style="margin-left:auto" id="whale-arrow">▾</span>
+    </div>
+    <div class="whale-body" id="whale-body">
+      <div class="whale-col"><h4>Top compras último trimestre (13F)</h4><div class="whale-list" id="whale-buys"><span class="muted" style="font-size:10px">Cargando…</span></div></div>
+      <div class="whale-col"><h4>Más tenidas por superinversores</h4><div class="whale-list" id="whale-holdings"><span class="muted" style="font-size:10px">Cargando…</span></div></div>
+    </div>
+  </div>
+
   <!-- STATS -->
   <div class="stats-strip" id="stats-strip" style="display:none">
     <div class="stat-card"><div class="sl">Total</div><div class="sv blue" id="st-total">—</div><div class="ss">instrumentos</div></div>
     <div class="stat-card"><div class="sl">Sobre SMA200</div><div class="sv green" id="st-sma">—</div><div class="ss">tendencia alcista</div></div>
     <div class="stat-card"><div class="sl">Strong Buy</div><div class="sv green" id="st-sb">—</div><div class="ss">recomendación TV</div></div>
-    <div class="stat-card"><div class="sl">RSI óptimo</div><div class="sv blue" id="st-rsi">—</div><div class="ss">50–70 momentum</div></div>
-    <div class="stat-card"><div class="sl">Near 52W High</div><div class="sv yellow" id="st-high">—</div><div class="ss">liderazgo</div></div>
+    <div class="stat-card"><div class="sl">🏛 Largo Plazo</div><div class="sv" id="st-long" style="color:var(--purple)">—</div><div class="ss">calidad + valoración</div></div>
+    <div class="stat-card"><div class="sl">⚡ Swing</div><div class="sv yellow" id="st-swing">—</div><div class="ss">momentum + rebote</div></div>
     <div class="stat-card"><div class="sl">Score prom.</div><div class="sv" id="st-score">—</div><div class="ss">8 capas (0–100)</div></div>
   </div>
 
@@ -328,6 +362,7 @@ tr.xrow td{background:#f0f9ff}
         <option value="macd">MACD alcista</option>
         <option value="strongbuy">TV Strong Buy</option>
         <option value="near52h">Near 52W High</option>
+        <option value="rebote">🎯 Rebote en soporte (bajo SMA200)</option>
         <option value="volspike">Vol spike &gt;2x</option>
         <option value="perfect">Todo verde ✓✓✓</option>
       </select>
@@ -367,7 +402,7 @@ tr.xrow td{background:#f0f9ff}
           <th>Técnico TV <span style="color:var(--green);font-size:8px">⚡ al instante</span></th>
           <th onclick="sortBy('preScore')">Score ⇅</th>
           <th>Semáforo</th>
-          <th>Horizonte</th>
+          <th>Estrategia</th>
           <th onclick="sortBy('pe')">P/E ⇅</th>
           <th onclick="sortBy('roe')">ROE ⇅</th>
           <th onclick="sortBy('grossMargin')">Margen ⇅</th>
@@ -385,7 +420,7 @@ tr.xrow td{background:#f0f9ff}
         <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
         <span id="prog-txt"></span>
       </div>
-      <span style="margin-left:auto;font-size:10px;color:var(--text3)">▸ Click = detalle · Doble click = gráfico TradingView</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3)">▸ Click = detalle · Doble click = gráfico en Finviz/TV (pestaña nueva)</span>
     </div>
   </div>
 
@@ -401,16 +436,65 @@ tr.xrow td{background:#f0f9ff}
     <span style="font-size:9px;color:var(--text3)">Filtros preconfigurados Ferrer + Grantham</span>
   </div>
 
-  <!-- CHART -->
-  <div id="chart-panel" style="display:none"></div>
 </main>
 </div>
 
 <script>
 const BASE = window.location.origin;
 let allStocks = [], openTicker = null, sortKey = 'preScore', sortAsc = false;
-let currentHorizon = 'all', currentMarket = 'all', globalMacroScore = 55;
+let currentStrategy = 'all', currentMarket = 'all', globalMacroScore = 55;
 const LIVE = {};
+// Dataroma — superinversores: set de tickers para cruzar con el screener
+const DATAROMA = { loaded: false, set: new Set(), holders: {}, buys: [], holdings: [] };
+
+// ── DATAROMA / SUPERINVERSORES ────────────────────────────────────────────────
+async function loadDataroma() {
+  const dot = document.getElementById('dr-status-dot');
+  const txt = document.getElementById('dr-status-txt');
+  try {
+    const r = await fetch(`${BASE}/api/dataroma`);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'sin datos');
+    DATAROMA.loaded   = true;
+    DATAROMA.buys     = d.data.topBuys || [];
+    DATAROMA.holdings = d.data.topHoldings || [];
+    [...DATAROMA.buys, ...DATAROMA.holdings].forEach(s => DATAROMA.set.add(s.ticker));
+    DATAROMA.holdings.forEach(s => { if (s.holders) DATAROMA.holders[s.ticker] = s.holders; });
+
+    dot.style.background = '#16a34a'; txt.textContent = '✓ Activa'; txt.style.color = '#16a34a';
+    document.getElementById('whale-sub').textContent =
+      `${DATAROMA.buys.length} top compras · ${DATAROMA.holdings.length} top holdings (13F trimestral)`;
+    document.getElementById('whale-buys').innerHTML = DATAROMA.buys.length
+      ? DATAROMA.buys.map(whaleChip).join('')
+      : '<span class="muted" style="font-size:10px">Sin datos este trimestre</span>';
+    document.getElementById('whale-holdings').innerHTML = DATAROMA.holdings.length
+      ? DATAROMA.holdings.slice(0, 15).map(whaleChip).join('')
+      : '<span class="muted" style="font-size:10px">Sin datos</span>';
+
+    // Si el screener ya cargó, re-puntuar con la capa Smart Money real
+    if (allStocks.length) { allStocks = allStocks.map(s => enrichStock(s)); renderTable(); }
+  } catch (e) {
+    dot.style.background = '#dc2626'; txt.textContent = 'No disponible';
+    document.getElementById('whale-sub').textContent = 'Dataroma no disponible ahora — el resto del dashboard funciona igual';
+    document.getElementById('whale-buys').innerHTML = document.getElementById('whale-holdings').innerHTML =
+      '<span class="muted" style="font-size:10px">—</span>';
+  }
+}
+function whaleChip(s) {
+  const n = s.holders ? `<span class="n">${s.holders} 🐋</span>` : '';
+  return `<span class="whale-chip" title="${s.name}" onclick="searchTicker('${s.ticker}')"><strong>${s.ticker}</strong>${n}</span>`;
+}
+function searchTicker(t) {
+  document.getElementById('f-q').value = t;
+  renderTable();
+  document.querySelector('.tbl-wrap').scrollIntoView({ behavior: 'smooth' });
+}
+function toggleWhalePanel() {
+  const b = document.getElementById('whale-body');
+  const open = b.style.display !== 'none';
+  b.style.display = open ? 'none' : 'grid';
+  document.getElementById('whale-arrow').textContent = open ? '▸' : '▾';
+}
 
 // ── CHECK API STATUS FROM ENV VARS ────────────────────────────────────────────
 async function checkApiStatus() {
@@ -521,8 +605,8 @@ function updateStats(s) {
   document.getElementById('st-total').textContent = (s.total || 0).toLocaleString('es-CL');
   document.getElementById('st-sma').textContent   = (s.aboveSMA200 || 0).toLocaleString('es-CL');
   document.getElementById('st-sb').textContent    = (s.strongBuy || 0).toLocaleString('es-CL');
-  document.getElementById('st-rsi').textContent   = (s.rsiOk || 0).toLocaleString('es-CL');
-  document.getElementById('st-high').textContent  = (s.nearHigh52 || 0).toLocaleString('es-CL');
+  document.getElementById('st-long').textContent  = allStocks.filter(x => x.strategies?.includes('long')).length.toLocaleString('es-CL');
+  document.getElementById('st-swing').textContent = allStocks.filter(x => x.strategies?.includes('swing')).length.toLocaleString('es-CL');
   const el = document.getElementById('st-score');
   el.textContent = s.avgScore || '—';
   el.className   = 'sv ' + (s.avgScore >= 70 ? 'green' : s.avgScore >= 50 ? 'yellow' : 'red');
@@ -532,6 +616,7 @@ function updateStats(s) {
 function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
 
 function enrichStock(s) {
+  const whaleHeld = DATAROMA.set.has(s.ticker);
   const layers = {
     macro:      globalMacroScore,
     momentum:   getMomScore(s),
@@ -539,12 +624,12 @@ function enrichStock(s) {
     quality:    getQualScore(s),
     pricing:    getPriceScore(s),
     efficiency: getEffScore(s),
-    whales:     50,
+    whales:     whaleHeld ? 80 : 50,
     fit:        getFitScore(s),
   };
   const preScore = clamp(Math.round(Object.values(layers).reduce((a, b) => a + b, 0) / 8));
-  const horizon  = calcHorizon(s, layers, preScore);
-  return { ...s, layers, preScore, horizon };
+  const strat    = calcStrategy(s, layers, preScore);
+  return { ...s, layers, preScore, whaleHeld, whaleHolders: DATAROMA.holders[s.ticker] || null, ...strat };
 }
 
 function getMomScore(s) {
@@ -588,11 +673,26 @@ function getFitScore(s) {
   if (s.currency === 'USD') sc += 5;
   return clamp(sc);
 }
-function calcHorizon(s, l, sc) {
-  if (l.quality > 70 && l.valuation > 60 && sc > 65) return 'long';
-  if (l.momentum > 75 && sc > 60) return 'short';
-  if (sc > 50) return 'mid';
-  return 'watch';
+// ── ESTRATEGIAS ───────────────────────────────────────────────────────────────
+// 🏛 Largo Plazo (value/GMO): calidad + valoración razonable → comprar y mantener.
+// ⚡ Swing momentum (Ferrer): tendencia alcista confirmada, entrar a favor.
+// 🎯 Swing rebote: bajo SMA200, sobrevendida y apoyada en el piso de 52 semanas
+//    (soporte mayor) → rebote técnico con stop bajo el soporte.
+function isSwingRebote(s) {
+  return s.aboveSMA200 === false && s.rsi != null && s.rsi < 40
+    && s.distFromLow != null && parseFloat(s.distFromLow) >= 0 && parseFloat(s.distFromLow) <= 15;
+}
+function isSwingMomentum(s) {
+  return s.aboveSMA200 === true && s.aboveSMA50 === true
+    && s.rsi >= 50 && s.rsi <= 70 && s.macdBull === true && s.recAll >= 0.1;
+}
+function calcStrategy(s, l, sc) {
+  const strategies = [];
+  let swingType = null;
+  if (l.quality >= 65 && l.valuation >= 55 && sc >= 60) strategies.push('long');
+  if (isSwingMomentum(s))      { strategies.push('swing'); swingType = 'momentum'; }
+  else if (isSwingRebote(s))   { strategies.push('swing'); swingType = 'rebote'; }
+  return { strategies, swingType };
 }
 
 // ── FILTER & RENDER ───────────────────────────────────────────────────────────
@@ -609,7 +709,8 @@ function getFiltered() {
     if (sector && s.sector !== sector) return false;
     if (s.preScore < minSc) return false;
     if (s.pe > 0 && s.pe > maxPe) return false;
-    if (currentHorizon !== 'all' && s.horizon !== currentHorizon) return false;
+    if (currentStrategy === 'watch' && s.strategies?.length) return false;
+    if ((currentStrategy === 'long' || currentStrategy === 'swing') && !s.strategies?.includes(currentStrategy)) return false;
     // TECHNICAL FILTERS — instant from TradingView data
     if (tech === 'sma200'    && s.aboveSMA200 !== true) return false;
     if (tech === 'both-sma'  && !(s.aboveSMA200 === true && s.aboveSMA50 === true)) return false;
@@ -617,6 +718,7 @@ function getFiltered() {
     if (tech === 'macd'      && s.macdBull !== true) return false;
     if (tech === 'strongbuy' && s.recAll < 0.5) return false;
     if (tech === 'near52h'   && !s.nearHigh52) return false;
+    if (tech === 'rebote'    && !isSwingRebote(s)) return false;
     if (tech === 'volspike'  && !(s.relVolume > 2)) return false;
     if (tech === 'perfect'   && !(s.aboveSMA200 === true && s.rsi >= 50 && s.rsi <= 70 && s.recAll >= 0.1 && s.macdBull === true)) return false;
     // FUNDAMENTAL FILTERS
@@ -647,15 +749,11 @@ function renderTable() {
     const io   = openTicker === s.ticker;
     const chgC = s.change >= 0 ? 'var(--green)' : 'var(--red)';
     const sgC  = s.preScore >= 70 ? 'sg-h' : s.preScore >= 50 ? 'sg-m' : 'sg-l';
-    const hBadge = s.horizon === 'long' ? '<span class="badge" style="background:var(--purple-l);color:var(--purple)">Largo</span>'
-      : s.horizon === 'mid'   ? '<span class="badge b-reg">Medio</span>'
-      : s.horizon === 'short' ? '<span class="badge b-neu">Corto</span>'
-      : '<span class="badge b-na">Watch</span>';
 
     tbody.innerHTML += `
-    <tr onclick="toggle('${s.ticker}')" ondblclick="openChart('${s.ticker}')" style="cursor:pointer" class="${io ? 'xrow' : ''}">
+    <tr onclick="toggle('${s.ticker}')" ondblclick="openChartLink('${s.ticker}')" style="cursor:pointer" class="${io ? 'xrow' : ''}">
       <td style="color:var(--text3);font-size:10px">${io ? '▾' : '▸'}</td>
-      <td><strong style="color:var(--blue)">${s.ticker}</strong></td>
+      <td><strong style="color:var(--blue)">${s.ticker}</strong>${s.whaleHeld ? ' <span title="En portafolios de superinversores (Dataroma)">🐋</span>' : ''}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font-size:10px">${s.description || s.name || '—'}</td>
       <td style="font-size:9px;color:var(--text3)">${s.country || s.marketName || '—'}</td>
       <td style="font-size:10px;color:var(--text3)">${(s.sector || '—').replace(' Services', '').replace(' Cyclical', '').replace(' Defensive', '')}</td>
@@ -665,14 +763,14 @@ function renderTable() {
       <td>${techChips(s)}</td>
       <td><span class="sg ${sgC}">${s.preScore}</span></td>
       <td>${semaphore(s)}</td>
-      <td>${hBadge}</td>
+      <td>${stratBadges(s)}</td>
       <td style="color:${s.pe > 0 && s.pe < 20 ? 'var(--green)' : s.pe > 35 ? 'var(--red)' : 'var(--text3)'}">${s.pe > 0 ? s.pe.toFixed(1) : '—'}</td>
       <td style="color:${s.roe > 15 ? 'var(--green)' : 'var(--text3)'}">${s.roe ? s.roe.toFixed(1) + '%' : '—'}</td>
       <td style="color:${s.grossMargin > 40 ? 'var(--green)' : s.grossMargin < 15 ? 'var(--red)' : 'var(--text3)'}">${s.grossMargin ? s.grossMargin.toFixed(1) + '%' : '—'}</td>
       <td style="font-size:10px;color:var(--text3)">${fmtCap(s.marketCap)}</td>
       <td style="white-space:nowrap">
         <button style="padding:2px 6px;background:var(--blue-l);border:1px solid #bfdbfe;color:var(--blue);border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;margin-right:2px" onclick="event.stopPropagation();loadDeep('${s.ticker}')">+ Deep</button>
-        <button style="padding:2px 6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:4px;font-size:9px;cursor:pointer" onclick="event.stopPropagation();openChart('${s.ticker}')">📊</button>
+        <button title="Abrir gráfico en ${s.marketName === 'america' ? 'Finviz' : 'TradingView'} (pestaña nueva)" style="padding:2px 6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:4px;font-size:9px;cursor:pointer" onclick="event.stopPropagation();openChartLink('${s.ticker}')">📊</button>
       </td>
     </tr>`;
 
@@ -683,7 +781,8 @@ function renderTable() {
     }
   });
 
-  document.getElementById('count-lbl').textContent = `${data.length.toLocaleString('es-CL')} de ${allStocks.length.toLocaleString('es-CL')} instrumentos${currentHorizon !== 'all' ? ' · ' + currentHorizon : ''}`;
+  const stratLbl = { long: '🏛 Largo Plazo', swing: '⚡ Swing', watch: 'Watch' };
+  document.getElementById('count-lbl').textContent = `${data.length.toLocaleString('es-CL')} de ${allStocks.length.toLocaleString('es-CL')} instrumentos${currentStrategy !== 'all' ? ' · ' + (stratLbl[currentStrategy] || currentStrategy) : ''}`;
 }
 
 // ── TECHNICAL CHIPS — from TradingView screener data (INSTANT, no API call) ──
@@ -705,6 +804,18 @@ function techChips(s) {
   // MACD
   if (s.macdBull != null) chips.push(`<span class="tc ${s.macdBull ? 'tc-bull' : 'tc-bear'}">MACD${s.macdBull ? '▲' : '▼'}</span>`);
   return `<div class="tech-row">${chips.join('')}</div>`;
+}
+
+function stratBadges(s) {
+  const b = [];
+  if (s.strategies?.includes('long'))
+    b.push('<span class="badge" style="background:var(--purple-l);color:var(--purple)" title="Largo plazo: calidad + valoración (GMO/value)">🏛 LP</span>');
+  if (s.swingType === 'momentum')
+    b.push('<span class="badge b-buy" title="Swing momentum: sobre SMA200+SMA50, RSI 50-70, MACD alcista">⚡ Momentum</span>');
+  if (s.swingType === 'rebote')
+    b.push('<span class="badge b-neu" title="Swing rebote: bajo SMA200, RSI <40, apoyada en piso de 52 semanas">🎯 Rebote</span>');
+  if (!b.length) b.push('<span class="badge b-na">Watch</span>');
+  return `<div style="display:flex;gap:3px;flex-wrap:wrap">${b.join('')}</div>`;
 }
 
 function semaphore(s) {
@@ -734,8 +845,9 @@ function renderDetail(s) {
   return `
   <div class="dh">
     <div>
-      <div class="dh-ticker">${s.ticker} <span style="font-size:11px;color:var(--text3)">${s.exchange || ''}</span></div>
+      <div class="dh-ticker">${s.ticker} <span style="font-size:11px;color:var(--text3)">${s.exchange || ''}</span> ${s.whaleHeld ? `<span class="badge b-whale" title="Dataroma">🐋 ${s.whaleHolders ? s.whaleHolders + ' superinversores' : 'Superinversores'}</span>` : ''}</div>
       <div class="dh-name">${s.description || s.name} · ${s.sector || '—'} · ${s.country || s.marketName}</div>
+      <div style="margin-top:4px">${stratBadges(s)}</div>
     </div>
     <div>
       <div class="dh-pv">$${s.price?.toFixed(2) || '—'} ${s.currency || ''}</div>
@@ -785,6 +897,7 @@ function renderDetail(s) {
     <!-- TARGETS + BALLENAS -->
     <div class="dk">
       <h3>Targets + Smart Money${lv?.target ? ' ✓' : ' (clic Deep)'}</h3>
+      ${s.whaleHeld ? `<div class="fun-row"><span>🐋 Dataroma</span><strong style="color:var(--blue)">${s.whaleHolders ? s.whaleHolders + ' superinversores la tienen' : 'En top compras / holdings'}</strong></div>` : ''}
       ${lv?.target ? `
       <div class="tgt-grid">
         <div class="tg"><div class="tl">Bajo</div><div class="tv red">$${parseFloat(lv.target.targetLow || 0).toFixed(0)}</div></div>
@@ -826,9 +939,9 @@ function renderDetail(s) {
   </div>
   <div class="d-actions">
     <button class="btn btn-p btn-sm" onclick="loadDeep('${s.ticker}')">↻ Cargar Deep (AV + FMP)</button>
-    <button class="btn btn-s btn-sm" onclick="openChart('${s.ticker}')">📊 Gráfico TV</button>
-    <button class="btn btn-s btn-sm" onclick="window.open('https://finviz.com/quote.ashx?t=${s.ticker}','_blank')">🔍 Finviz</button>
-    <button class="btn btn-s btn-sm" onclick="window.open('https://www.tradingview.com/symbols/${s.fullSymbol || s.ticker}/','_blank')">TV →</button>
+    ${s.marketName === 'america' ? `<button class="btn btn-s btn-sm" onclick="window.open('https://finviz.com/quote.ashx?t=${s.ticker}&p=d','_blank')">📊 Gráfico Finviz →</button>` : ''}
+    <button class="btn btn-s btn-sm" onclick="window.open('https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s.fullSymbol || s.ticker)}','_blank')">📊 Gráfico TV →</button>
+    ${s.whaleHeld ? `<button class="btn btn-s btn-sm" onclick="window.open('https://www.dataroma.com/m/stock.php?sym=${s.ticker}','_blank')">🐋 Dataroma →</button>` : ''}
   </div>`;
 }
 
@@ -858,32 +971,16 @@ async function loadDeep(ticker) {
   renderTable();
 }
 
-// ── CHART ──────────────────────────────────────────────────────────────────────
-function openChart(ticker) {
-  const s   = allStocks.find(x => x.ticker === ticker);
+// ── CHART LINKS — sin widget embebido: el gráfico se abre en pestaña nueva ────
+// Finviz solo cubre acciones de USA; para el resto, gráfico completo de TradingView.
+function chartUrl(s, ticker) {
+  if (s?.marketName === 'america') return `https://finviz.com/quote.ashx?t=${s.ticker}&p=d`;
   const sym = s?.fullSymbol || ticker;
-  const panel = document.getElementById('chart-panel');
-  panel.style.display = 'block';
-  panel.innerHTML = `
-  <div class="chart-wrap">
-    <div class="chart-header">
-      <span>📊 ${ticker} — TradingView (SMA200 · SMA50 · RSI · MACD)</span>
-      <button class="btn btn-s btn-sm" onclick="this.closest('.chart-wrap').parentElement.style.display='none'">✕</button>
-    </div>
-    <div id="tv_${Date.now()}" style="height:500px"></div>
-  </div>`;
-  const cid = panel.querySelector('[id^=tv_]').id;
-  const s2 = document.createElement('script');
-  s2.src = 'https://s3.tradingview.com/tv.js';
-  s2.onload = () => new TradingView.widget({
-    width: '100%', height: 500, symbol: sym, interval: 'D',
-    timezone: 'America/Santiago', theme: 'light', style: '1', locale: 'es',
-    toolbar_bg: '#f8fafc', enable_publishing: false, allow_symbol_change: true,
-    studies: ['MASimple@tv-studilib;length=200', 'MASimple@tv-studilib;length=50', 'RSI@tv-studilib', 'MACD@tv-studilib'],
-    container_id: cid,
-  });
-  document.head.appendChild(s2);
-  panel.scrollIntoView({ behavior: 'smooth' });
+  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(sym)}`;
+}
+function openChartLink(ticker) {
+  const s = allStocks.find(x => x.ticker === ticker);
+  window.open(chartUrl(s, ticker), '_blank');
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────
@@ -903,12 +1000,12 @@ function fmtNum(v) {
 }
 function toggle(t) { openTicker = openTicker === t ? null : t; renderTable(); }
 function sortBy(k) { if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = false; } renderTable(); }
-function setHorizon(h, el) { currentHorizon = h; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderTable(); }
+function setStrategy(h, el) { currentStrategy = h; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderTable(); }
 function setMarket(m, el)  { currentMarket = m; document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
 function resetFilters() {
   ['f-type','f-sector','f-tech','f-fund'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-q').value = ''; document.getElementById('f-score').value = '0'; document.getElementById('f-pe').value = '999';
-  currentHorizon = 'all'; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); document.querySelector('.htab').classList.add('active');
+  currentStrategy = 'all'; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); document.querySelector('.htab').classList.add('active');
   renderTable();
 }
 
@@ -924,6 +1021,7 @@ function oFV(k) { window.open(FV[k], '_blank'); }
 
 // INIT
 loadMacro();
+loadDataroma();
 checkApiStatus();
 </script>
 </body>
