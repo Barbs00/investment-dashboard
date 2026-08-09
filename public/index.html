@@ -177,6 +177,71 @@ tr.xrow td{background:#f0f9ff}
 .loading-row{display:flex;align-items:center;gap:8px;padding:24px;color:var(--text3);font-size:12px;justify-content:center}
 .vol-hi{background:var(--yellow-l);color:var(--yellow);padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700}
 .vol-ok{color:var(--text3);font-size:10px}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════════════════ */
+.macro-strip .mc:last-child{grid-column:span 2}
+.menu-btn{display:none;border:1px solid var(--border);background:var(--surface);border-radius:var(--rs);padding:6px 11px;font-size:16px;cursor:pointer;color:var(--text);line-height:1}
+.sb-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99}
+
+/* Tablet */
+@media (max-width:1100px){
+  .macro-strip{grid-template-columns:repeat(3,1fr)}
+  .macro-strip .mc:last-child{grid-column:1/-1}
+  .stats-strip{grid-template-columns:repeat(3,1fr)}
+  .detail-grid{grid-template-columns:1fr 1fr}
+}
+
+/* Móvil */
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .main{padding:8px;gap:8px}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;height:100vh;max-height:100vh;width:min(300px,85vw);z-index:100;transform:translateX(-100%);transition:transform .25s ease;box-shadow:4px 0 20px rgba(15,23,42,.15)}
+  .sidebar.open{transform:none}
+  .sb-backdrop.show{display:block}
+  .menu-btn{display:inline-flex}
+  .page-title h1{font-size:14px}
+  .htab{padding:7px 10px}
+  .mkt-btn{padding:7px 9px}
+  .macro-strip{grid-template-columns:repeat(2,1fr)}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .whale-body{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .dh{flex-direction:column;gap:6px}
+  .dh-pv,.dh-chg{text-align:left}
+  /* Filtros a ancho completo, área táctil cómoda */
+  .filters-wrap{padding:8px}
+  .filters-wrap .fg{flex:1 1 45%}
+  .filters-wrap select,.filters-wrap input{width:100%!important;padding:8px;font-size:12px}
+  .filters-wrap>div:last-child{flex:1 1 100%;display:flex}
+  #load-btn{flex:1;padding:10px}
+  /* Tabla compacta: quedan Ticker · Precio · Hoy% · Técnico · Score · Estrategia · 📊 */
+  th:nth-child(1),td:nth-child(1),
+  th:nth-child(3),td:nth-child(3),
+  th:nth-child(4),td:nth-child(4),
+  th:nth-child(5),td:nth-child(5),
+  th:nth-child(8),td:nth-child(8),
+  th:nth-child(11),td:nth-child(11),
+  th:nth-child(13),td:nth-child(13),
+  th:nth-child(14),td:nth-child(14),
+  th:nth-child(15),td:nth-child(15),
+  th:nth-child(16),td:nth-child(16),
+  th:nth-child(17),td:nth-child(17){display:none}
+  td[colspan]{display:table-cell!important}
+  /* Layout fijo: las 6 columnas se reparten el ancho exacto de la pantalla */
+  table{table-layout:fixed;width:100%}
+  th:nth-child(2){width:52px}
+  th:nth-child(6){width:58px}
+  th:nth-child(7){width:54px}
+  th:nth-child(10){width:38px}
+  th:nth-child(12){width:82px}
+  th,td{padding:6px 4px;overflow:hidden;text-overflow:ellipsis}
+  th span{display:none}
+  td:nth-child(7) span{font-size:10px;letter-spacing:-.3px}
+  td .cur{display:none}
+  .tbl-scroll{max-height:65vh}
+  .dw{padding:9px}
+}
+@media (min-width:761px){.sb-backdrop{display:none!important}}
 </style>
 </head>
 <body>
@@ -270,10 +335,13 @@ tr.xrow td{background:#f0f9ff}
   <div class="tip-box"><strong>⚡ Regla:</strong> Macro confirma → técnico (TV, al instante) filtra → calidad selecciona → ballenas (Dataroma/FMP) validan.</div>
 </aside>
 
+<div class="sb-backdrop" id="sb-backdrop" onclick="toggleSidebar()"></div>
+
 <!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
 <main class="main">
 
   <div class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" title="Menú">☰</button>
     <div class="page-title">
       <h1>Global Investment Dashboard</h1>
       <p id="last-update">Presiona "Cargar oportunidades globales"</p>
@@ -294,7 +362,7 @@ tr.xrow td{background:#f0f9ff}
     <div class="mc"><div class="ml">Fed Funds</div><div class="mv muted" id="m-fed">—</div><div class="ms">Política monetaria</div></div>
     <div class="mc"><div class="ml">T10Y Yield</div><div class="mv muted" id="m-t10">—</div><div class="ms">Bono 10 años</div></div>
     <div class="mc"><div class="ml">T10–T2 Spread</div><div class="mv muted" id="m-sp">—</div><div class="ms" id="m-sp-sub">Curva yields</div></div>
-    <div class="mc" style="grid-column:span 2"><div class="ml">Señal ciclo — Ferrer + Grantham</div><div class="mv muted" id="m-sig" style="font-size:13px">—</div><div class="ms" id="m-sig-sub">Cargando FRED…</div></div>
+    <div class="mc"><div class="ml">Señal ciclo — Ferrer + Grantham</div><div class="mv muted" id="m-sig" style="font-size:13px">—</div><div class="ms" id="m-sig-sub">Cargando FRED…</div></div>
   </div>
 
   <!-- DATAROMA / SUPERINVERSORES -->
@@ -420,7 +488,7 @@ tr.xrow td{background:#f0f9ff}
         <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
         <span id="prog-txt"></span>
       </div>
-      <span style="margin-left:auto;font-size:10px;color:var(--text3)">▸ Click = detalle · Doble click = gráfico en Finviz/TV (pestaña nueva)</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3)">▸ Click = detalle · 📊 = gráfico en Finviz/TV (pestaña nueva)</span>
     </div>
   </div>
 
@@ -488,6 +556,10 @@ function searchTicker(t) {
   document.getElementById('f-q').value = t;
   renderTable();
   document.querySelector('.tbl-wrap').scrollIntoView({ behavior: 'smooth' });
+}
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sb-backdrop').classList.toggle('show');
 }
 function toggleWhalePanel() {
   const b = document.getElementById('whale-body');
@@ -757,7 +829,7 @@ function renderTable() {
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font-size:10px">${s.description || s.name || '—'}</td>
       <td style="font-size:9px;color:var(--text3)">${s.country || s.marketName || '—'}</td>
       <td style="font-size:10px;color:var(--text3)">${(s.sector || '—').replace(' Services', '').replace(' Cyclical', '').replace(' Defensive', '')}</td>
-      <td><strong>${s.price != null ? s.price.toFixed(2) : '—'}<span style="font-size:9px;color:var(--text3)"> ${s.currency || ''}</span></strong></td>
+      <td><strong>${s.price != null ? s.price.toFixed(2) : '—'}<span class="cur" style="font-size:9px;color:var(--text3)"> ${s.currency || ''}</span></strong></td>
       <td><span style="color:${chgC};font-weight:600">${s.change >= 0 ? '+' : ''}${s.change?.toFixed(2) || 0}%</span></td>
       <td>${s.relVolume > 2 ? `<span class="vol-hi">${s.relVolume.toFixed(1)}x</span>` : `<span class="vol-ok">${s.relVolume ? s.relVolume.toFixed(1) + 'x' : '—'}</span>`}</td>
       <td>${techChips(s)}</td>
@@ -769,7 +841,7 @@ function renderTable() {
       <td style="color:${s.grossMargin > 40 ? 'var(--green)' : s.grossMargin < 15 ? 'var(--red)' : 'var(--text3)'}">${s.grossMargin ? s.grossMargin.toFixed(1) + '%' : '—'}</td>
       <td style="font-size:10px;color:var(--text3)">${fmtCap(s.marketCap)}</td>
       <td style="white-space:nowrap">
-        <button style="padding:2px 6px;background:var(--blue-l);border:1px solid #bfdbfe;color:var(--blue);border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;margin-right:2px" onclick="event.stopPropagation();loadDeep('${s.ticker}')">+ Deep</button>
+        <button class="deep-btn" style="padding:2px 6px;background:var(--blue-l);border:1px solid #bfdbfe;color:var(--blue);border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;margin-right:2px" onclick="event.stopPropagation();loadDeep('${s.ticker}')">+ Deep</button>
         <button title="Abrir gráfico en ${s.marketName === 'america' ? 'Finviz' : 'TradingView'} (pestaña nueva)" style="padding:2px 6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:4px;font-size:9px;cursor:pointer" onclick="event.stopPropagation();openChartLink('${s.ticker}')">📊</button>
       </td>
     </tr>`;
