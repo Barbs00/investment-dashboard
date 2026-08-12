@@ -163,6 +163,16 @@ tr.xrow td{background:#f0f9ff}
 .whale-chip .n{color:var(--text3);font-size:9px}
 .b-whale{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 
+/* VEREDICTO */
+.v-buy{background:#052e16;color:#4ade80;border:1px solid #16a34a50}
+.v-lp{background:var(--purple-l);color:var(--purple)}
+.v-wait{background:var(--yellow-l);color:#92400e}
+.v-tech{background:var(--red-l);color:var(--red)}
+.v-ok{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+.verdict-box{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.verdict-box h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.verdict-box ul{margin:0;padding-left:16px;font-size:10px;color:var(--text2);line-height:1.6}
+
 /* PLAN DE TRADE (swing) */
 .trade-plan{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;align-items:center}
 .tp-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;flex-basis:100%}
@@ -243,12 +253,13 @@ tr.xrow td{background:#f0f9ff}
   th:nth-child(5),td:nth-child(5),
   th:nth-child(8),td:nth-child(8),
   th:nth-child(11),td:nth-child(11),
+  th:nth-child(12),td:nth-child(12),
   th:nth-child(13),td:nth-child(13),
-  th:nth-child(14),td:nth-child(14),
   th:nth-child(15),td:nth-child(15),
   th:nth-child(16),td:nth-child(16),
   th:nth-child(17),td:nth-child(17),
-  th:nth-child(18),td:nth-child(18){display:none}
+  th:nth-child(18),td:nth-child(18),
+  th:nth-child(19),td:nth-child(19){display:none}
   td[colspan]{display:table-cell!important}
   /* Layout fijo: las 6 columnas se reparten el ancho exacto de la pantalla */
   table{table-layout:fixed;width:100%}
@@ -256,7 +267,7 @@ tr.xrow td{background:#f0f9ff}
   th:nth-child(6){width:58px}
   th:nth-child(7){width:54px}
   th:nth-child(10){width:38px}
-  th:nth-child(12){width:82px}
+  th:nth-child(14){width:78px}
   th,td{padding:6px 4px;overflow:hidden;text-overflow:ellipsis}
   th span{display:none}
   td:nth-child(7) span{font-size:10px;letter-spacing:-.3px}
@@ -474,6 +485,15 @@ tr.xrow td{background:#f0f9ff}
         <option value="perfect">Todo verde ✓✓✓</option>
       </select>
     </div>
+    <div class="fg"><label>Veredicto</label>
+      <select id="f-verdict" onchange="renderTable()">
+        <option value="">Todos</option>
+        <option value="comprar">⭐ Setup completo</option>
+        <option value="acumular">🏛 Acumular (LP)</option>
+        <option value="esperar">⏳ Esperar retroceso</option>
+        <option value="tecnica">⚠ Solo técnica</option>
+      </select>
+    </div>
     <div class="fg"><label>Fundamental</label>
       <select id="f-fund" onchange="renderTable()">
         <option value="">Todos</option>
@@ -511,6 +531,7 @@ tr.xrow td{background:#f0f9ff}
           <th>Semáforo</th>
           <th>Estrategia</th>
           <th onclick="sortBy('timingVal')">Timing ⇅</th>
+          <th>Veredicto</th>
           <th onclick="sortBy('pe')">P/E ⇅</th>
           <th onclick="sortBy('roe')">ROE ⇅</th>
           <th onclick="sortBy('grossMargin')">Margen ⇅</th>
@@ -518,7 +539,7 @@ tr.xrow td{background:#f0f9ff}
           <th></th>
         </tr></thead>
         <tbody id="tbody">
-          <tr><td colspan="18" class="loading-row">Presiona "Cargar oportunidades globales" — los indicadores técnicos se muestran al instante desde TradingView</td></tr>
+          <tr><td colspan="19" class="loading-row">Presiona "Cargar oportunidades globales" — los indicadores técnicos se muestran al instante desde TradingView</td></tr>
         </tbody>
       </table>
     </div>
@@ -672,7 +693,7 @@ async function loadScreener() {
   btn.innerHTML = '<span class="spin"></span> Cargando…';
   btn.disabled = true;
   showProgress(10, 'Conectando con TradingView…');
-  document.getElementById('tbody').innerHTML = `<tr><td colspan="18" class="loading-row"><div class="spin"></div>Escaneando mercados globales… 10–20 segundos</td></tr>`;
+  document.getElementById('tbody').innerHTML = `<tr><td colspan="19" class="loading-row"><div class="spin"></div>Escaneando mercados globales… 10–20 segundos</td></tr>`;
 
   const type = document.getElementById('f-type').value;
   const url  = `${BASE}/api/screener?market=${currentMarket}&limit=500&type=${type||'all'}&minCap=200&minVol=50000`;
@@ -697,7 +718,7 @@ async function loadScreener() {
     setTimeout(() => document.getElementById('prog-wrap').style.display = 'none', 3000);
     renderTable();
   } catch(e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="18" style="padding:20px;color:var(--red);text-align:center">
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="19" style="padding:20px;color:var(--red);text-align:center">
       ❌ ${e.message}<br><small style="color:var(--text3)">Verifica que el deploy en Vercel está activo y que las funciones API funcionan</small></td></tr>`;
     btn.innerHTML = '🌍 Cargar oportunidades globales';
     btn.disabled  = false;
@@ -750,8 +771,10 @@ function enrichStock(s) {
   const distFromLowN = s.distFromLow != null ? parseFloat(s.distFromLow) : null;
   const timingVal    = strat.swingType === 'momentum' ? ext50
                      : strat.swingType === 'rebote'   ? distFromLowN : null;
-  return { ...s, layers, preScore, whaleHeld, whaleHolders: DATAROMA.holders[s.ticker] || null,
+  const enriched = { ...s, layers, preScore, whaleHeld, whaleHolders: DATAROMA.holders[s.ticker] || null,
            ext50, distFromLowN, timingVal, ...strat };
+  enriched.verdict = calcVerdict(enriched);
+  return enriched;
 }
 
 function getMomScore(s) {
@@ -933,6 +956,8 @@ function getFiltered() {
     if (currentStrategy === 'long' && !s.strategies?.includes('long')) return false;
     if (currentStrategy === 'momentum' && s.swingType !== 'momentum') return false;
     if (currentStrategy === 'rebote' && s.swingType !== 'rebote') return false;
+    const vfilter = document.getElementById('f-verdict').value;
+    if (vfilter && s.verdict?.level !== vfilter) return false;
     // TECHNICAL FILTERS — instant from TradingView data
     if (tech === 'sma200'    && s.aboveSMA200 !== true) return false;
     if (tech === 'both-sma'  && !(s.aboveSMA200 === true && s.aboveSMA50 === true)) return false;
@@ -968,8 +993,8 @@ function debouncedRender() { clearTimeout(_rtTimer); _rtTimer = setTimeout(rende
 function renderTable() {
   const data = getFiltered();
   const tbody = document.getElementById('tbody');
-  if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="18" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
-  if (!data.length)      { tbody.innerHTML = `<tr><td colspan="18" class="loading-row">Sin resultados — prueba con otros filtros</td></tr>`; document.getElementById('count-lbl').textContent = '0 resultados'; return; }
+  if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
+  if (!data.length)      { tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Sin resultados — prueba con otros filtros</td></tr>`; document.getElementById('count-lbl').textContent = '0 resultados'; return; }
 
   // Construir todo el HTML en memoria y asignarlo al DOM UNA sola vez:
   // innerHTML += por fila re-parsea la tabla completa en cada iteración (O(n²))
@@ -995,6 +1020,7 @@ function renderTable() {
       <td>${semaphore(s)}</td>
       <td>${stratBadges(s)}</td>
       <td>${timingCell(s)}</td>
+      <td>${verdictCell(s)}</td>
       <td style="color:${s.pe > 0 && s.pe < 20 ? 'var(--green)' : s.pe > 35 ? 'var(--red)' : 'var(--text3)'}">${s.pe > 0 ? s.pe.toFixed(1) : '—'}</td>
       <td style="color:${s.roe > 15 ? 'var(--green)' : 'var(--text3)'}">${s.roe ? s.roe.toFixed(1) + '%' : '—'}</td>
       <td style="color:${s.grossMargin > 40 ? 'var(--green)' : s.grossMargin < 15 ? 'var(--red)' : 'var(--text3)'}">${s.grossMargin ? s.grossMargin.toFixed(1) + '%' : '—'}</td>
@@ -1006,7 +1032,7 @@ function renderTable() {
     </tr>`);
 
     if (io) {
-      rows.push(`<tr><td colspan="18" style="padding:0;background:#f0f9ff;border-bottom:2px solid #bae6fd">
+      rows.push(`<tr><td colspan="19" style="padding:0;background:#f0f9ff;border-bottom:2px solid #bae6fd">
         <div class="dw">${renderDetail(s)}</div>
       </td></tr>`);
     }
@@ -1036,6 +1062,72 @@ function techChips(s) {
   // MACD
   if (s.macdBull != null) chips.push(`<span class="tc ${s.macdBull ? 'tc-bull' : 'tc-bear'}">MACD${s.macdBull ? '▲' : '▼'}</span>`);
   return `<div class="tech-row">${chips.join('')}</div>`;
+}
+
+// ── VEREDICTO — el checklist completo codificado ─────────────────────────────
+// ⭐ Setup completo: timing fresco + R/B ≥1.5 + fundamentos + tamaño + liquidez.
+// ⏳ Esperar: buen candidato pero extendido/sobrecomprado — esperar retroceso.
+// ⚠ Solo técnica: el setup existe pero sin fundamentos — tamaño mínimo o pasar.
+// 🏛 Acumular: largo plazo sin setup swing — se compra por valor, no por timing.
+function calcVerdict(s) {
+  const isSwing = !!s.swingType;
+  const isLP    = s.strategies?.includes('long');
+  if (!isSwing && !isLP) return null;
+
+  const pros = [], cons = [];
+  const fundOk = s.roe > 0 && s.pe > 0;
+  const sizeOk = s.marketCap >= 2e9;
+  const liqOk  = s.relVolume >= 0.5;
+  const cyclical = /Energy|Minerals|Materials/i.test(s.sector || '') && s.pe > 0 && s.pe < 8;
+
+  if (fundOk) pros.push(`fundamentos reales (ROE ${s.roe?.toFixed(0)}%, P/E ${s.pe?.toFixed(0)})`);
+  else cons.push('sin fundamentos sólidos (ROE negativo o sin datos) — apuesta puramente técnica');
+  if (!sizeOk) cons.push('capitalización chica (<$2B) — más volátil y manipulable');
+  if (!liqOk)  cons.push('poco volumen hoy — difícil entrar/salir a buen precio');
+  if (cyclical) cons.push('cíclica de materias primas: el P/E bajo suele ser cima de ciclo, no ganga');
+  if (s.whaleHeld) pros.push('en portafolios de superinversores 🐋');
+
+  if (isSwing) {
+    const plan  = tradePlan(s);
+    const fresh = s.timingVal != null && (s.swingType === 'momentum' ? s.timingVal < 5 : s.timingVal <= 8);
+    const late  = s.swingType === 'momentum' && (s.ext50 > 12 || s.rsi > 70);
+
+    if (late) {
+      const why = [];
+      if (s.ext50 > 12) why.push(`extendida +${s.ext50.toFixed(0)}% sobre la SMA50 — el stop queda lejos`);
+      if (s.rsi > 70)   why.push(`RSI ${s.rsi.toFixed(0)} sobrecomprada`);
+      why.push('buen candidato pero MAL momento: esperar el retroceso hacia la SMA50');
+      return { level: 'esperar', label: '⏳ Esperar', cls: 'v-wait', reasons: [...why, ...cons] };
+    }
+    if (!fundOk) return { level: 'tecnica', label: '⚠ Solo técnica', cls: 'v-tech', reasons: cons };
+    if (plan && plan.rr >= 1.5) pros.push(`riesgo/beneficio 1:${plan.rr.toFixed(1)}`);
+    else cons.push('riesgo/beneficio pobre (<1:1.5) al precio actual');
+    if (fresh) pros.push('timing fresco — stop cerca');
+    else cons.push('timing regular — ni fresca ni extendida');
+
+    if (fresh && plan && plan.rr >= 1.5 && sizeOk && liqOk && !cyclical)
+      return { level: 'comprar', label: '⭐ Setup completo', cls: 'v-buy', reasons: pros };
+    return { level: 'ok', label: '✓ Aceptable', cls: 'v-ok', reasons: [...pros, ...cons] };
+  }
+
+  // Solo largo plazo: se compra por valor (como Acción real), el timing importa menos
+  if (fundOk && sizeOk && !cyclical)
+    return { level: 'acumular', label: '🏛 Acumular', cls: 'v-lp', reasons: ['calidad + valoración razonable — comprar como Acción y mantener', ...pros] };
+  return { level: 'ok', label: '✓ Revisar', cls: 'v-ok', reasons: [...pros, ...cons] };
+}
+
+function verdictCell(s) {
+  if (!s.verdict) return '<span class="muted">—</span>';
+  return `<span class="badge ${s.verdict.cls}" title="${s.verdict.reasons.join(' · ').replace(/"/g, '')}">${s.verdict.label}</span>`;
+}
+
+function renderVerdictBox(s) {
+  if (!s.verdict) return '';
+  const border = { comprar: 'var(--green)', esperar: 'var(--yellow)', tecnica: 'var(--red)', acumular: 'var(--purple)', ok: 'var(--border)' }[s.verdict.level];
+  return `<div class="verdict-box" style="border-left-color:${border}">
+    <h4><span class="badge ${s.verdict.cls}">${s.verdict.label}</span></h4>
+    <ul>${s.verdict.reasons.map(r => `<li>${r}</li>`).join('')}</ul>
+  </div>`;
 }
 
 // Qué tan fresca es la entrada: verde = entrar, amarillo = ajustada, rojo = tarde
@@ -1099,6 +1191,7 @@ function renderDetail(s) {
       <div class="dh-chg" style="color:${s.change >= 0 ? 'var(--green)' : 'var(--red)'}">${s.change >= 0 ? '+' : ''}${s.change?.toFixed(2) || 0}%</div>
     </div>
   </div>
+  ${renderVerdictBox(s)}
   ${renderTradePlan(s)}
   <div class="detail-grid">
     <!-- 8 CAPAS -->
@@ -1257,7 +1350,7 @@ function setStrategy(h, el) {
 }
 function setMarket(m, el)  { currentMarket = m; document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
 function resetFilters() {
-  ['f-type','f-sector','f-tech','f-fund'].forEach(id => document.getElementById(id).value = '');
+  ['f-type','f-sector','f-tech','f-fund','f-verdict'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-q').value = ''; document.getElementById('f-score').value = '0'; document.getElementById('f-pe').value = '999';
   currentStrategy = 'all'; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); document.querySelector('.htab').classList.add('active');
   renderTable();
