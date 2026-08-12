@@ -1066,9 +1066,18 @@ function renderTable() {
   if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
   if (!data.length) {
     const q = document.getElementById('f-q').value.trim();
+    const safe = q.replace(/[<>"']/g, '');
     // El screener carga solo las más activas por volumen — si buscan un ticker
-    // que no vino (ADBE, COIN…), ofrecer traerlo directo desde TradingView
-    tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Sin resultados entre los cargados${q ? ` — <button id="remote-search-btn" class="btn btn-p btn-sm" onclick="searchRemote()">🔍 Buscar "${q.replace(/[<>"']/g, '')}" en TradingView</button>` : ' — prueba con otros filtros'}</td></tr>`;
+    // que no vino (MSFT, ADBE, COIN…), buscarlo automáticamente en TradingView
+    // (una sola vez por consulta; el botón queda como reintento manual)
+    if (q.length >= 2 && !AUTO_SEARCHED.has(q.toLowerCase())) {
+      AUTO_SEARCHED.add(q.toLowerCase());
+      tbody.innerHTML = `<tr><td colspan="19" class="loading-row"><div class="spin"></div>"${safe}" no está entre los cargados — buscándolo en TradingView…</td></tr>`;
+      document.getElementById('count-lbl').textContent = 'Buscando…';
+      searchRemote();
+      return;
+    }
+    tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Sin resultados entre los cargados${q ? ` — <button id="remote-search-btn" class="btn btn-p btn-sm" onclick="searchRemote()">🔍 Buscar "${safe}" en TradingView</button>` : ' — prueba con otros filtros'}</td></tr>`;
     document.getElementById('count-lbl').textContent = '0 resultados';
     return;
   }
@@ -1362,6 +1371,7 @@ function renderDetail(s) {
 }
 
 // ── BÚSQUEDA REMOTA — trae un ticker que no vino en el screener ──────────────
+const AUTO_SEARCHED = new Set();
 async function searchRemote() {
   const q = document.getElementById('f-q').value.trim();
   if (!q) return;
@@ -1372,14 +1382,22 @@ async function searchRemote() {
     const d = await r.json();
     const have = new Set(allStocks.map(s => s.ticker));
     const nuevos = (d.success ? d.data : []).filter(s => !have.has(s.ticker));
-    if (!nuevos.length) { if (btn) { btn.textContent = `Sin resultados para "${q}" en TradingView`; } return; }
+    if (!nuevos.length) {
+      const msg = `"${q.replace(/[<>"']/g, '')}" no aparece en TradingView — revisa el ticker`;
+      if (btn) { btn.textContent = msg; }
+      else document.getElementById('tbody').innerHTML = `<tr><td colspan="19" class="loading-row">${msg}</td></tr>`;
+      return;
+    }
     nuevos.forEach(s => allStocks.push(enrichStock(s)));
     // Volver a "Todo" para que el resultado no quede oculto por la pestaña activa
     currentStrategy = 'all';
     document.querySelectorAll('.htab').forEach(b => b.classList.remove('active'));
     document.querySelector('.htab').classList.add('active');
     renderTable();
-  } catch (e) { if (btn) { btn.textContent = 'Error al buscar'; btn.disabled = false; } }
+  } catch (e) {
+    if (btn) { btn.textContent = 'Error al buscar — reintentar'; btn.disabled = false; }
+    else document.getElementById('tbody').innerHTML = `<tr><td colspan="19" class="loading-row">Error al buscar en TradingView — <button id="remote-search-btn" class="btn btn-p btn-sm" onclick="searchRemote()">Reintentar</button></td></tr>`;
+  }
 }
 
 // ── DEEP DATA (AV + FMP desde env vars) ───────────────────────────────────────
