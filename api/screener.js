@@ -80,6 +80,11 @@ export default async function handler(req, res) {
     'Volatility.D',                // 37 daily volatility
     'ATR',                         // 38 ATR(14)
     'float_shares_outstanding',    // 39 float shares
+    'Perf.W',                      // 40 performance 1 week %
+    'Perf.1M',                     // 41 performance 1 month %
+    'Perf.3M',                     // 42 performance 3 months %
+    'Perf.6M',                     // 43 performance 6 months %
+    'Perf.Y',                      // 44 performance 1 year %
   ];
 
   // ── BUILD FILTER ─────────────────────────────────────────────────────────
@@ -210,6 +215,7 @@ export default async function handler(req, res) {
       assetType: d[35],
       volatilityD: d[37],
       atr: d[38],
+      perfW: d[40], perf1M: d[41], perf3M: d[42], perf6M: d[43], perf1Y: d[44],
       // Computed
       aboveSMA200, aboveSMA50, rsiOk, macdBull,
       distFromHigh, distFromLow, nearHigh52,

@@ -163,6 +163,28 @@ tr.xrow td{background:#f0f9ff}
 .whale-chip .n{color:var(--text3);font-size:9px}
 .b-whale{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 
+/* PLAN DE TRADE (swing) */
+.trade-plan{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;align-items:center}
+.tp-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;flex-basis:100%}
+.tp-cell{flex:1;min-width:90px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;text-align:center}
+.tp-cell .l{font-size:9px;color:var(--text3);margin-bottom:2px}
+.tp-cell .v{font-size:13px;font-weight:700}
+.tp-cell .s{font-size:9px;color:var(--text3)}
+.tp-note{flex-basis:100%;font-size:9px;color:var(--text3);line-height:1.4}
+
+/* SIMULADOR TOP 10 */
+.sim-table{width:100%;border-collapse:collapse;font-size:11px}
+.sim-table th{text-align:right;padding:5px 7px;font-size:9px;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);position:static}
+.sim-table th:first-child,.sim-table td:first-child{text-align:left}
+.sim-table td{text-align:right;padding:5px 7px;border-bottom:1px solid var(--border2)}
+.sim-table tr.sim-total td{font-weight:700;border-top:2px solid var(--border);background:var(--bg)}
+.sim-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 6px}
+.sim-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center}
+.sim-card .l{font-size:9px;color:var(--text3);text-transform:uppercase}
+.sim-card .v{font-size:16px;font-weight:800;margin:2px 0}
+.sim-card .s{font-size:9px;color:var(--text3)}
+@media (max-width:760px){.sim-cards{grid-template-columns:repeat(2,1fr)}}
+
 /* FINVIZ */
 .fv-strip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .fv-btn{padding:5px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-size:10px;font-weight:500}
@@ -353,6 +375,7 @@ tr.xrow td{background:#f0f9ff}
         <button class="htab" onclick="setStrategy('swing',this)" title="Momentum Ferrer (sobre SMA200, RSI 50-70, MACD↑) o rebote en soporte mayor bajo SMA200.">⚡ Swing</button>
         <button class="htab" onclick="setStrategy('watch',this)">Watch</button>
       </div>
+      <button class="btn btn-s btn-sm" onclick="toggleSim()">🏆 Top 10</button>
       <button class="btn btn-s btn-sm" onclick="loadMacro()">↻ Macro</button>
     </div>
   </div>
@@ -386,6 +409,16 @@ tr.xrow td{background:#f0f9ff}
     <div class="stat-card"><div class="sl">🏛 Largo Plazo</div><div class="sv" id="st-long" style="color:var(--purple)">—</div><div class="ss">calidad + valoración</div></div>
     <div class="stat-card"><div class="sl">⚡ Swing</div><div class="sv yellow" id="st-swing">—</div><div class="ss">momentum + rebote</div></div>
     <div class="stat-card"><div class="sl">Score prom.</div><div class="sv" id="st-score">—</div><div class="ss">8 capas (0–100)</div></div>
+  </div>
+
+  <!-- SIMULADOR TOP 10 -->
+  <div class="whale-panel" id="sim-panel" style="display:none">
+    <div class="whale-head" onclick="toggleSim()">
+      <span>🏆 Simulador — Top 10 por Score</span>
+      <span class="sub" id="sim-sub">¿Cuánto habrías ganado comprando las 10 mejores de la vista actual?</span>
+      <span style="margin-left:auto">✕</span>
+    </div>
+    <div style="padding:10px 12px" id="sim-body"></div>
   </div>
 
   <!-- FILTERS -->
@@ -767,6 +800,104 @@ function calcStrategy(s, l, sc) {
   return { strategies, swingType };
 }
 
+// ── PLAN DE TRADE (solo setups swing) ─────────────────────────────────────────
+// Rebote: entrada al precio actual, stop 3% bajo el piso de 52 semanas (si el
+// soporte se rompe, salir), objetivo en la primera media móvil por encima.
+// Momentum: stop en la SMA50 (o 2×ATR si queda más cerca), objetivo en el
+// máximo de 52 semanas o extensión de 3×ATR si ya está pegado al máximo.
+function tradePlan(s) {
+  if (!s.swingType || !s.price) return null;
+  let stop = null, target = null;
+  if (s.swingType === 'rebote') {
+    if (!s.low52w) return null;
+    stop = s.low52w * 0.97;
+    target = (s.sma50 && s.sma50 > s.price && (!s.sma200 || s.sma50 < s.sma200)) ? s.sma50 : s.sma200;
+  } else {
+    stop = Math.max(s.sma50 || 0, s.atr ? s.price - 2 * s.atr : 0) || null;
+    target = (s.high52w && s.high52w > s.price * 1.02) ? s.high52w
+           : (s.atr ? s.price + 3 * s.atr : null);
+  }
+  if (!stop || !target || stop >= s.price || target <= s.price) return null;
+  const riskPct   = (s.price - stop) / s.price * 100;
+  const rewardPct = (target - s.price) / s.price * 100;
+  const rr = rewardPct / riskPct;
+  return { stop, target, riskPct, rewardPct, rr };
+}
+
+function renderTradePlan(s) {
+  const p = tradePlan(s);
+  if (!p) return '';
+  const rrC = p.rr >= 2 ? 'var(--green)' : p.rr >= 1.5 ? 'var(--yellow)' : 'var(--red)';
+  const kind = s.swingType === 'rebote' ? '🎯 Rebote en soporte' : '⚡ Momentum';
+  return `
+  <div class="trade-plan">
+    <div class="tp-title">Plan de trade swing — ${kind}</div>
+    <div class="tp-cell"><div class="l">Entrada</div><div class="v">$${s.price.toFixed(2)}</div><div class="s">precio actual</div></div>
+    <div class="tp-cell"><div class="l">Stop loss</div><div class="v" style="color:var(--red)">$${p.stop.toFixed(2)}</div><div class="s">−${p.riskPct.toFixed(1)}%${s.swingType === 'rebote' ? ' · bajo el piso 52W' : ' · SMA50 / 2×ATR'}</div></div>
+    <div class="tp-cell"><div class="l">Objetivo</div><div class="v" style="color:var(--green)">$${p.target.toFixed(2)}</div><div class="s">+${p.rewardPct.toFixed(1)}%${s.swingType === 'rebote' ? ' · media móvil' : ' · máx 52W / 3×ATR'}</div></div>
+    <div class="tp-cell"><div class="l">Riesgo/Beneficio</div><div class="v" style="color:${rrC}">1 : ${p.rr.toFixed(1)}</div><div class="s">${p.rr >= 2 ? 'bueno ✓' : p.rr >= 1.5 ? 'aceptable' : 'pobre — evitar'}</div></div>
+    <div class="tp-note">Regla: arriesga máximo 1–2% de tu capital por trade. Con stop a ${p.riskPct.toFixed(1)}%, para arriesgar $10.000 la posición máxima es ~$${Math.round(10000 / p.riskPct * 100).toLocaleString('es-CL')}. Valida el soporte a mano en el gráfico antes de entrar.</div>
+  </div>`;
+}
+
+// ── SIMULADOR TOP 10 ──────────────────────────────────────────────────────────
+const CAPITAL_SIM = 1000000; // CLP repartidos en partes iguales
+function toggleSim() {
+  const panel = document.getElementById('sim-panel');
+  if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  if (!allStocks.length) { alert('Primero presiona "Cargar oportunidades globales"'); return; }
+  renderSim();
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+function renderSim() {
+  const top = getFiltered().slice(0, 10);
+  const HORIZONS = [['perf1M', '1 mes'], ['perf3M', '3 meses'], ['perf6M', '6 meses'], ['perf1Y', '1 año']];
+  const pc = (v) => v == null ? '<span class="muted">—</span>'
+    : `<span style="color:${v >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+
+  // Promedio del top 10 y del universo completo (benchmark) por horizonte
+  const avg = (arr, k) => {
+    const vals = arr.map(s => s[k]).filter(v => v != null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+
+  const rows = top.map((s, i) => `
+    <tr>
+      <td><strong style="color:var(--blue)">${i + 1}. ${s.ticker}</strong>${s.whaleHeld ? ' 🐋' : ''} <span class="muted" style="font-size:9px">${s.preScore}</span></td>
+      ${HORIZONS.map(([k]) => `<td>${pc(s[k])}</td>`).join('')}
+    </tr>`).join('');
+
+  const avgRow = `<tr class="sim-total"><td>Promedio Top 10</td>${HORIZONS.map(([k]) => `<td>${pc(avg(top, k))}</td>`).join('')}</tr>`;
+  const benchRow = `<tr><td class="muted">Promedio de TODO lo cargado (${allStocks.length})</td>${HORIZONS.map(([k]) => `<td>${pc(avg(allStocks, k))}</td>`).join('')}</tr>`;
+
+  const cards = HORIZONS.map(([k, lbl]) => {
+    const a = avg(top, k);
+    if (a == null) return `<div class="sim-card"><div class="l">Hace ${lbl}</div><div class="v muted">—</div></div>`;
+    const value = CAPITAL_SIM * (1 + a / 100);
+    const diff  = value - CAPITAL_SIM;
+    return `<div class="sim-card">
+      <div class="l">Hace ${lbl}</div>
+      <div class="v" style="color:${diff >= 0 ? 'var(--green)' : 'var(--red)'}">$${Math.round(value).toLocaleString('es-CL')}</div>
+      <div class="s">${diff >= 0 ? '+' : ''}$${Math.round(diff).toLocaleString('es-CL')} (${a >= 0 ? '+' : ''}${a.toFixed(1)}%)</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('sim-sub').textContent =
+    `$${CAPITAL_SIM.toLocaleString('es-CL')} repartidos en las 10 mejores de la vista actual${currentStrategy !== 'all' ? ' (' + currentStrategy + ')' : ''}`;
+  document.getElementById('sim-body').innerHTML = `
+    <div class="sim-cards">${cards}</div>
+    <div style="overflow-x:auto"><table class="sim-table">
+      <thead><tr><th>Acción (score)</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th></tr></thead>
+      <tbody>${rows}${avgRow}${benchRow}</tbody>
+    </table></div>
+    <div style="font-size:9px;color:var(--text3);margin-top:8px;line-height:1.5">
+      ⚠️ <strong>Esto NO es un backtest real:</strong> el score se calcula con los indicadores de HOY, así que mira el pasado con ventaja
+      (las que hoy puntúan alto suelen haber subido ya). Úsalo para comparar el Top 10 contra el promedio del mercado
+      y entre pestañas (🏛 vs ⚡), no como promesa de rentabilidad futura. Rendimiento pasado no garantiza retornos.
+    </div>`;
+}
+
 // ── FILTER & RENDER ───────────────────────────────────────────────────────────
 function getFiltered() {
   const q      = document.getElementById('f-q').value.toLowerCase();
@@ -926,6 +1057,7 @@ function renderDetail(s) {
       <div class="dh-chg" style="color:${s.change >= 0 ? 'var(--green)' : 'var(--red)'}">${s.change >= 0 ? '+' : ''}${s.change?.toFixed(2) || 0}%</div>
     </div>
   </div>
+  ${renderTradePlan(s)}
   <div class="detail-grid">
     <!-- 8 CAPAS -->
     <div class="dk">
