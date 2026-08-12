@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     minCap    = 500,     // $500M minimum market cap
     minVol    = 100000,  // 100K minimum volume
     sortBy    = 'volume_delta',
+    search    = '',      // busca un ticker/nombre específico (ignora mínimos de cap/volumen)
   } = req.query;
 
   // ── MARKET CONFIGS ───────────────────────────────────────────────────────
@@ -89,6 +90,10 @@ export default async function handler(req, res) {
 
   // ── BUILD FILTER ─────────────────────────────────────────────────────────
   const buildFilter = () => {
+    // Modo búsqueda: matchea por ticker/nombre sin exigir cap/volumen mínimos
+    if (search) {
+      return [{ left: 'name', operation: 'match', right: String(search).trim() }];
+    }
     const filters = [
       { left: 'market_cap_basic', operation: 'greater', right: parseInt(minCap) * 1e6 },
       { left: 'average_volume_10d_calc', operation: 'greater', right: parseInt(minVol) },
