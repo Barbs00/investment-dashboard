@@ -431,8 +431,8 @@ tr.xrow td{background:#f0f9ff}
   <!-- SIMULADOR TOP 10 -->
   <div class="whale-panel" id="sim-panel" style="display:none">
     <div class="whale-head" onclick="toggleSim()">
-      <span>🏆 Simulador — Top 10 por Score</span>
-      <span class="sub" id="sim-sub">¿Cuánto habrías ganado comprando las 10 mejores de la vista actual?</span>
+      <span>🏆 Top 10 — Recomendadas hoy</span>
+      <span class="sub" id="sim-sub">Qué comprar según el veredicto + cómo se movió el top (contexto)</span>
       <span style="margin-left:auto">✕</span>
     </div>
     <div style="padding:10px 12px" id="sim-body"></div>
@@ -890,6 +890,58 @@ function toggleSim() {
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth' });
 }
+// Recomendadas HOY (hacia adelante): cartera base 🏛 diversificada (máx 2 por
+// sector, 🐋 primero) + trades ⭐ con setup completo. Codifica las reglas de
+// selección en vez de mirar solo el score.
+function buildRecommended() {
+  const lps = allStocks.filter(s => s.verdict?.level === 'acumular')
+    .sort((a, b) => (b.whaleHeld - a.whaleHeld) || (b.preScore - a.preScore));
+  const bySector = {}, cartera = [];
+  for (const s of lps) {
+    const k = s.sector || '?';
+    if ((bySector[k] || 0) >= 2) continue;
+    bySector[k] = (bySector[k] || 0) + 1;
+    cartera.push(s);
+    if (cartera.length >= 6) break;
+  }
+  const trades = allStocks.filter(s => s.verdict?.level === 'comprar')
+    .sort((a, b) => (a.timingVal ?? 99) - (b.timingVal ?? 99)).slice(0, 4);
+  return { cartera, trades };
+}
+
+function recRow(s, extra) {
+  return `<tr onclick="searchTicker('${s.ticker}')" style="cursor:pointer">
+    <td><strong style="color:var(--blue)">${s.ticker}</strong>${s.whaleHeld ? ' 🐋' : ''} <span class="muted" style="font-size:9px">${(s.description || s.name || '').slice(0, 22)}</span></td>
+    <td style="text-align:left;font-size:10px;color:var(--text3)">${(s.sector || '—').replace(' Services', '')}</td>
+    <td><span class="sg ${s.preScore >= 70 ? 'sg-h' : s.preScore >= 50 ? 'sg-m' : 'sg-l'}" style="width:24px;height:24px;font-size:9px">${s.preScore}</span></td>
+    <td style="text-align:left;font-size:10px">${extra}</td>
+  </tr>`;
+}
+
+function renderRecommended() {
+  const { cartera, trades } = buildRecommended();
+  const carteraRows = cartera.map(s =>
+    recRow(s, `P/E ${s.pe?.toFixed(0) ?? '—'} · ROE ${s.roe?.toFixed(0) ?? '—'}% · comprar como Acción, revisar mensual`)).join('');
+  const tradeRows = trades.map(s => {
+    const p = tradePlan(s);
+    return recRow(s, p ? `entrada $${s.price.toFixed(2)} · stop $${p.stop.toFixed(2)} · obj $${p.target.toFixed(2)} · R/B 1:${p.rr.toFixed(1)}` : '');
+  }).join('');
+  return `
+  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">📌 Recomendadas HOY — hacia adelante, según veredicto</div>
+  <div style="display:grid;grid-template-columns:1fr;gap:10px">
+    <div>
+      <div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:3px">🏛 Cartera base (${cartera.length}) — calidad diversificada, máx 2 por sector</div>
+      <table class="sim-table"><tbody>${carteraRows || '<tr><td class="muted" style="text-align:left">Ninguna pasa el filtro 🏛 hoy — no forzar compras</td></tr>'}</tbody></table>
+    </div>
+    <div>
+      <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:3px">⭐ Trades con setup completo (${trades.length}) — plan definido antes de entrar</div>
+      <table class="sim-table"><tbody>${tradeRows || '<tr><td class="muted" style="text-align:left">Ningún setup completo hoy — el mejor trade a veces es no operar</td></tr>'}</tbody></table>
+    </div>
+  </div>
+  <div style="border-top:1px solid var(--border);margin:12px 0 8px"></div>
+  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">📊 Contexto — cómo se movió el Top 10 por score (pasado, no predicción)</div>`;
+}
+
 function renderSim() {
   const top = getFiltered().slice(0, 10);
   const HORIZONS = [['perf1M', '1 mes'], ['perf3M', '3 meses'], ['perf6M', '6 meses'], ['perf1Y', '1 año']];
@@ -924,8 +976,9 @@ function renderSim() {
   }).join('');
 
   document.getElementById('sim-sub').textContent =
-    `$${CAPITAL_SIM.toLocaleString('es-CL')} repartidos en las 10 mejores de la vista actual${currentStrategy !== 'all' ? ' (' + currentStrategy + ')' : ''}`;
+    `Recomendadas de hoy según veredicto + contexto de rendimiento pasado`;
   document.getElementById('sim-body').innerHTML = `
+    ${renderRecommended()}
     <div class="sim-cards">${cards}</div>
     <div style="overflow-x:auto"><table class="sim-table">
       <thead><tr><th>Acción (score)</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th></tr></thead>
@@ -994,7 +1047,14 @@ function renderTable() {
   const data = getFiltered();
   const tbody = document.getElementById('tbody');
   if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
-  if (!data.length)      { tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Sin resultados — prueba con otros filtros</td></tr>`; document.getElementById('count-lbl').textContent = '0 resultados'; return; }
+  if (!data.length) {
+    const q = document.getElementById('f-q').value.trim();
+    // El screener carga solo las más activas por volumen — si buscan un ticker
+    // que no vino (ADBE, COIN…), ofrecer traerlo directo desde TradingView
+    tbody.innerHTML = `<tr><td colspan="19" class="loading-row">Sin resultados entre los cargados${q ? ` — <button id="remote-search-btn" class="btn btn-p btn-sm" onclick="searchRemote()">🔍 Buscar "${q.replace(/[<>"']/g, '')}" en TradingView</button>` : ' — prueba con otros filtros'}</td></tr>`;
+    document.getElementById('count-lbl').textContent = '0 resultados';
+    return;
+  }
 
   // Construir todo el HTML en memoria y asignarlo al DOM UNA sola vez:
   // innerHTML += por fila re-parsea la tabla completa en cada iteración (O(n²))
@@ -1282,6 +1342,27 @@ function renderDetail(s) {
     <button class="btn btn-s btn-sm" onclick="window.open('https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s.fullSymbol || s.ticker)}','_blank')">📊 Gráfico TV →</button>
     ${s.whaleHeld ? `<button class="btn btn-s btn-sm" onclick="window.open('https://www.dataroma.com/m/stock.php?sym=${s.ticker}','_blank')">🐋 Dataroma →</button>` : ''}
   </div>`;
+}
+
+// ── BÚSQUEDA REMOTA — trae un ticker que no vino en el screener ──────────────
+async function searchRemote() {
+  const q = document.getElementById('f-q').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('remote-search-btn');
+  if (btn) { btn.textContent = 'Buscando…'; btn.disabled = true; }
+  try {
+    const r = await fetch(`${BASE}/api/screener?market=${currentMarket}&search=${encodeURIComponent(q)}&limit=30`);
+    const d = await r.json();
+    const have = new Set(allStocks.map(s => s.ticker));
+    const nuevos = (d.success ? d.data : []).filter(s => !have.has(s.ticker));
+    if (!nuevos.length) { if (btn) { btn.textContent = `Sin resultados para "${q}" en TradingView`; } return; }
+    nuevos.forEach(s => allStocks.push(enrichStock(s)));
+    // Volver a "Todo" para que el resultado no quede oculto por la pestaña activa
+    currentStrategy = 'all';
+    document.querySelectorAll('.htab').forEach(b => b.classList.remove('active'));
+    document.querySelector('.htab').classList.add('active');
+    renderTable();
+  } catch (e) { if (btn) { btn.textContent = 'Error al buscar'; btn.disabled = false; } }
 }
 
 // ── DEEP DATA (AV + FMP desde env vars) ───────────────────────────────────────
