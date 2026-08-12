@@ -485,6 +485,11 @@ tr.xrow td{background:#f0f9ff}
         <option value="perfect">Todo verde ✓✓✓</option>
       </select>
     </div>
+    <div class="fg"><label title="Mercados que ofrece XTB como Acciones: USA y Europa. Aproximado — verifica el ticker en xStation antes de operar.">Broker</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;padding:5px 0">
+        <input type="checkbox" id="f-xtb" onchange="renderTable()"> Solo XTB 🏦
+      </label>
+    </div>
     <div class="fg"><label>Veredicto</label>
       <select id="f-verdict" onchange="renderTable()">
         <option value="">Todos</option>
@@ -818,6 +823,15 @@ function getFitScore(s) {
   if (s.currency === 'USD') sc += 5;
   return clamp(sc);
 }
+// ── BROKER XTB ────────────────────────────────────────────────────────────────
+// XTB ofrece Acciones de USA y las principales bolsas europeas; NO de Japón,
+// Hong Kong, India, Brasil, Canadá ni Australia. Aproximación por mercado —
+// verificar el ticker en xStation antes de operar.
+const XTB_MARKETS = new Set(['america', 'germany', 'france', 'uk', 'europe']);
+function isXTB(s) {
+  return XTB_MARKETS.has(s.marketName) && s.exchange !== 'OTC';
+}
+
 // ── ESTRATEGIAS ───────────────────────────────────────────────────────────────
 // 🏛 Largo Plazo (value/GMO): calidad + valoración razonable → comprar y mantener.
 // ⚡ Swing momentum (Ferrer): tendencia alcista confirmada, entrar a favor.
@@ -894,7 +908,9 @@ function toggleSim() {
 // sector, 🐋 primero) + trades ⭐ con setup completo. Codifica las reglas de
 // selección en vez de mirar solo el score.
 function buildRecommended() {
-  const lps = allStocks.filter(s => s.verdict?.level === 'acumular')
+  // Respetar el filtro de broker: recomendar solo lo que se puede comprar
+  const pool = document.getElementById('f-xtb').checked ? allStocks.filter(isXTB) : allStocks;
+  const lps = pool.filter(s => s.verdict?.level === 'acumular')
     .sort((a, b) => (b.whaleHeld - a.whaleHeld) || (b.preScore - a.preScore));
   const bySector = {}, cartera = [];
   for (const s of lps) {
@@ -904,7 +920,7 @@ function buildRecommended() {
     cartera.push(s);
     if (cartera.length >= 6) break;
   }
-  const trades = allStocks.filter(s => s.verdict?.level === 'comprar')
+  const trades = pool.filter(s => s.verdict?.level === 'comprar')
     .sort((a, b) => (a.timingVal ?? 99) - (b.timingVal ?? 99)).slice(0, 4);
   return { cartera, trades };
 }
@@ -1011,6 +1027,7 @@ function getFiltered() {
     if (currentStrategy === 'rebote' && s.swingType !== 'rebote') return false;
     const vfilter = document.getElementById('f-verdict').value;
     if (vfilter && s.verdict?.level !== vfilter) return false;
+    if (document.getElementById('f-xtb').checked && !isXTB(s)) return false;
     // TECHNICAL FILTERS — instant from TradingView data
     if (tech === 'sma200'    && s.aboveSMA200 !== true) return false;
     if (tech === 'both-sma'  && !(s.aboveSMA200 === true && s.aboveSMA50 === true)) return false;
@@ -1432,6 +1449,7 @@ function setStrategy(h, el) {
 function setMarket(m, el)  { currentMarket = m; document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
 function resetFilters() {
   ['f-type','f-sector','f-tech','f-fund','f-verdict'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-xtb').checked = false;
   document.getElementById('f-q').value = ''; document.getElementById('f-score').value = '0'; document.getElementById('f-pe').value = '999';
   currentStrategy = 'all'; document.querySelectorAll('.htab').forEach(b => b.classList.remove('active')); document.querySelector('.htab').classList.add('active');
   renderTable();
