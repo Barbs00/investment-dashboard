@@ -450,7 +450,7 @@ tr.xrow td{background:#f0f9ff}
         <option value="etf">ETFs</option><option value="reit">REITs</option>
       </select>
     </div>
-    <div class="fg"><label>Buscar</label><input type="text" id="f-q" placeholder="AAPL, NVDA…" style="width:110px" oninput="renderTable()"></div>
+    <div class="fg"><label>Buscar</label><input type="text" id="f-q" placeholder="AAPL, NVDA…" style="width:110px" oninput="debouncedRender()"></div>
     <div class="fg"><label>Sector</label>
       <select id="f-sector" onchange="renderTable()" style="width:130px">
         <option value="">Todos</option>
@@ -485,8 +485,8 @@ tr.xrow td{background:#f0f9ff}
         <option value="gmo">GMO combo (val+cal)</option>
       </select>
     </div>
-    <div class="fg"><label>Score mín</label><input type="number" id="f-score" value="0" min="0" max="100" style="width:58px" oninput="renderTable()"></div>
-    <div class="fg"><label>P/E máx</label><input type="number" id="f-pe" value="999" style="width:58px" oninput="renderTable()"></div>
+    <div class="fg"><label>Score mín</label><input type="number" id="f-score" value="0" min="0" max="100" style="width:58px" oninput="debouncedRender()"></div>
+    <div class="fg"><label>P/E máx</label><input type="number" id="f-pe" value="999" style="width:58px" oninput="debouncedRender()"></div>
     <div style="display:flex;gap:5px;align-items:flex-end">
       <button class="btn btn-s btn-sm" onclick="resetFilters()">Reset</button>
       <button class="btn btn-p" id="load-btn" onclick="loadScreener()">🌍 Cargar oportunidades globales</button>
@@ -960,19 +960,27 @@ function getFiltered() {
   });
 }
 
+// Espera a que el usuario deje de escribir antes de re-renderizar (evita un
+// render completo por cada tecla en el buscador)
+let _rtTimer;
+function debouncedRender() { clearTimeout(_rtTimer); _rtTimer = setTimeout(renderTable, 200); }
+
 function renderTable() {
   const data = getFiltered();
   const tbody = document.getElementById('tbody');
   if (!allStocks.length) { tbody.innerHTML = `<tr><td colspan="18" class="loading-row">Presiona "Cargar oportunidades globales"</td></tr>`; return; }
   if (!data.length)      { tbody.innerHTML = `<tr><td colspan="18" class="loading-row">Sin resultados — prueba con otros filtros</td></tr>`; document.getElementById('count-lbl').textContent = '0 resultados'; return; }
 
-  tbody.innerHTML = '';
+  // Construir todo el HTML en memoria y asignarlo al DOM UNA sola vez:
+  // innerHTML += por fila re-parsea la tabla completa en cada iteración (O(n²))
+  // y congelaba el navegador con 400+ instrumentos.
+  const rows = [];
   data.forEach(s => {
     const io   = openTicker === s.ticker;
     const chgC = s.change >= 0 ? 'var(--green)' : 'var(--red)';
     const sgC  = s.preScore >= 70 ? 'sg-h' : s.preScore >= 50 ? 'sg-m' : 'sg-l';
 
-    tbody.innerHTML += `
+    rows.push(`
     <tr onclick="toggle('${s.ticker}')" ondblclick="openChartLink('${s.ticker}')" style="cursor:pointer" class="${io ? 'xrow' : ''}">
       <td style="color:var(--text3);font-size:10px">${io ? '▾' : '▸'}</td>
       <td><strong style="color:var(--blue)">${s.ticker}</strong>${s.whaleHeld ? ' <span title="En portafolios de superinversores (Dataroma)">🐋</span>' : ''}</td>
@@ -995,14 +1003,15 @@ function renderTable() {
         <button class="deep-btn" style="padding:2px 6px;background:var(--blue-l);border:1px solid #bfdbfe;color:var(--blue);border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;margin-right:2px" onclick="event.stopPropagation();loadDeep('${s.ticker}')">+ Deep</button>
         <button title="Abrir gráfico en ${s.marketName === 'america' ? 'Finviz' : 'TradingView'} (pestaña nueva)" style="padding:2px 6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:4px;font-size:9px;cursor:pointer" onclick="event.stopPropagation();openChartLink('${s.ticker}')">📊</button>
       </td>
-    </tr>`;
+    </tr>`);
 
     if (io) {
-      tbody.innerHTML += `<tr><td colspan="18" style="padding:0;background:#f0f9ff;border-bottom:2px solid #bae6fd">
+      rows.push(`<tr><td colspan="18" style="padding:0;background:#f0f9ff;border-bottom:2px solid #bae6fd">
         <div class="dw">${renderDetail(s)}</div>
-      </td></tr>`;
+      </td></tr>`);
     }
   });
+  tbody.innerHTML = rows.join('');
 
   const stratLbl = { long: '🏛 Largo Plazo', swing: '⚡ Swing', watch: 'Watch' };
   document.getElementById('count-lbl').textContent = `${data.length.toLocaleString('es-CL')} de ${allStocks.length.toLocaleString('es-CL')} instrumentos${currentStrategy !== 'all' ? ' · ' + (stratLbl[currentStrategy] || currentStrategy) : ''}`;
